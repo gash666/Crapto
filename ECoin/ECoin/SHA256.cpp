@@ -3,7 +3,9 @@
 #include <bitset>
 #include <cstdint>
 #include <sstream>
+
 using namespace std;
+
 void padding(string& input)
 {
 	//add padding to the message to make it a multiple of 512 bits
@@ -14,7 +16,8 @@ void padding(string& input)
     for (int a = 7; a >= 0; a--)
         input += static_cast<char>((LengthBits >> a * 8) & 0xFF);
 }
-string HashSHA256(string input)
+
+string SHA256(string input)
 {
     // constants for the algorithm
     constexpr uint32_t k[64] = 
