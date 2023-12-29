@@ -19,7 +19,7 @@ void padding(string& input)
 
 string SHA256(string input)
 {
-    // constants for the algorithm
+    //constants for the algorithm
     constexpr uint32_t k[64] = 
     {
         0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
@@ -42,7 +42,7 @@ string SHA256(string input)
     padding(input);
     for (size_t i = 0; i < input.length(); i += 64) 
     {
-        // Break the block into 16 32-bit words
+        //break the block into 16 32-bit words
         uint32_t w[64];
         for (int j = 0; j < 16; ++j) 
         {
@@ -52,7 +52,7 @@ string SHA256(string input)
                 (static_cast<uint8_t>(input[i + j * 4 + 3]));
         }
 
-        // Extend the first 16 words into the remaining 48 words
+        //extend the first 16 words into the remaining 48 words
         for (int j = 16; j < 64; ++j) 
         {
             uint32_t s0 = (w[j - 15] >> 7 | w[j - 15] << 25) ^ (w[j - 15] >> 18 | w[j - 15] << 14) ^ (w[j - 15] >> 3);
@@ -61,7 +61,7 @@ string SHA256(string input)
             w[j] = w[j - 16] + s0 + w[j - 7] + s1;
         }
 
-        // Initialize working variables to the current hash values
+        //initialize working variables to the current hash values
         uint32_t a = h0;
         uint32_t b = h1;
         uint32_t c = h2;
@@ -71,7 +71,7 @@ string SHA256(string input)
         uint32_t g = h6;
         uint32_t h = h7;
 
-        // Compression function main loop
+        //compression function main loop
         for (int j = 0; j < 64; ++j) 
         {
             uint32_t S1 = (e >> 6 | e << 26) ^ (e >> 11 | e << 21) ^ (e >> 25 | e << 7);
@@ -91,7 +91,7 @@ string SHA256(string input)
             a = temp1 + temp2;
         }
 
-        // Add the compressed chunk to the current hash values
+        //add the compressed chunk to the current hash values
         h0 += a;
         h1 += b;
         h2 += c;
@@ -102,7 +102,7 @@ string SHA256(string input)
         h7 += h;
     }
 
-    // Produce the final hash value
+    //produce the final hash value
     stringstream ss;
     ss << hex << setw(8) << setfill('0') << h0
         << hex << setw(8) << setfill('0') << h1
