@@ -4,7 +4,7 @@
 #include <climits>
 #include <boost/multiprecision/cpp_int.hpp>
 #include "H_Node_Supporter.h"
-#include "Constants.h"
+#include "H_Constants.h"
 
 using namespace std;
 using namespace boost::multiprecision;
@@ -246,22 +246,28 @@ Node* tree;
 int getBucket(uint256_t id)
 {
 	//returns the bucket for node with certain id
-	/*if (id >> (64 * 3) != 0)
-		return 255 - __builtin_clzll(ULL(id >> (64 * 3) & 0xFFFFFFFFFFFFFFFF));
+	if (id >> (64 * 3) != 0)
+		return 255 - _lzcnt_u64((ULL)(id >> (64 * 3) & 0xFFFFFFFFFFFFFFFF));
 	if (id >> (64 * 2) != 0)
-		return 255 - 64 - __builtin_clzll(ULL(id >> (64 * 2) & 0xFFFFFFFFFFFFFFFF));
+		return 255 - 64 - _lzcnt_u64((ULL)(id >> (64 * 2) & 0xFFFFFFFFFFFFFFFF));
 	if (id >> 64 != 0)
-		return 255 - 64 * 2 - __builtin_clzll(ULL(id >> 64 & 0xFFFFFFFFFFFFFFFF));
-	return 255 - 64 * 3 - __builtin_clzll(ULL(id));*/
+		return 255 - 64 * 2 - _lzcnt_u64((ULL)(id >> 64 & 0xFFFFFFFFFFFFFFFF));
+	return 255 - 64 * 3 - _lzcnt_u64((ULL)(id));
 	return 0;
 }
 
 bool canEnterBucket(NodeDetails addnew)
 {
 	//returns whether the new node can enter the bucket
-	if (buckets[getBucket(addnew.nodeID)].size() < Bucket_Size)
-		return true;
-	return false;
+	//checks if the node appears in the bucket list
+	int bucketNumber = getBucket(addnew.nodeID);
+	for (int a = 0; a < buckets[bucketNumber].size(); a++)
+		if (buckets[bucketNumber][a].nodeID == addnew.nodeID)
+			return false;
+	//checks if the bucket is full
+	if (buckets[bucketNumber].size() >= Bucket_Size)
+		return false;
+	return true;
 }
 
 void removeFromBucket(uint256_t removeID)

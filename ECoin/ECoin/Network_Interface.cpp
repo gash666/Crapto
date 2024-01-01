@@ -1,8 +1,11 @@
 #include <iostream>
+#include <vector>
+#include "H_Constants.h"
 #include <winsock2.h>
 #include <ws2tcpip.h>
-#include <vector>
-#include "Constants.h"
+#include <iomanip>
+
+#pragma comment(lib, "iphlpapi.lib")
 
 using namespace std;
 
@@ -112,10 +115,14 @@ bool initSocket(bool firstTime = false, int listenPort = -1)
             enough = true;
         attempts++;
     }
+
+    //returns that the init was done successfully
+    return true;
 }
 
-bool sendMessage(char* message, char* receivingIp, int receivingPort)
+bool sendMessage(char* message, int len, char* receivingIp, int receivingPort)
 {
+    //sends a message
     //sets the address of the receiver
     sockaddr_in destinationAddress;
     destinationAddress.sin_family = AF_INET;
@@ -123,101 +130,100 @@ bool sendMessage(char* message, char* receivingIp, int receivingPort)
     inet_pton(AF_INET, receivingIp, &destinationAddress.sin_addr);
 
     //sends the message and handles errors
-    int bytesSent = sendto(mySocket, message, strlen(message), 0, (struct sockaddr*)&destinationAddress, sizeof(destinationAddress));
+    int bytesSent = sendto(mySocket, message, (size_t)len, 0, (struct sockaddr*)&destinationAddress, sizeof(destinationAddress));
     if (bytesSent == SOCKET_ERROR)
     {
-        std::cerr << "error sending message: " << WSAGetLastError() << '\n';
+        cout << "error sending message: " << WSAGetLastError() << '\n';
         return false;
     }
     else
-        cout << "Sent " << bytesSent << " bytes: " << message << '\n';
+    {
+        /////////////////////////////////////////////////////////////
+        cout << "Sent " << bytesSent << " bytes: " << '\n';
+        cout << hex;
+        for (int a = 0; a < len; a++)
+            cout << hex << setw(2) << std::setfill('0') << static_cast<unsigned>(static_cast<unsigned char>(message[a])) << ' ';
+        cout << dec << '\n' << '\n';
+    }
+
+    //returns that the message was sent successfully
     return true;
 }
 
 //saves the start of a different message if read accidentaly
-char receiveBuffer[Read_Block_Size];
+char receiveBuffer[Maximum_Message_Size];
 int bytesReceived;
-bool readStart = false;
+int portReceivedFrom;
+string ipReceivedFrom = "";
+
+pair <string, int> getAddress()
+{
+    //returns the address of the last sender
+    return { ipReceivedFrom, portReceivedFrom };
+}
 
 bool receiveMessage(vector <char>* message)
 {
+    //receives a message
+    //set the time of delay
+    timeval timeout;
+    timeout.tv_sec = 0;
+    timeout.tv_usec = 0;
+
+    //set up the file descriptor set for select
+    fd_set readSet;
+    FD_ZERO(&readSet);
+    FD_SET(mySocket, &readSet);
+
+    //checks to see if there is data waiting to be read
+    int selectResult = select(0, &readSet, nullptr, nullptr, &timeout);
+    if (selectResult == SOCKET_ERROR)
+    {
+        //handles an error
+        cout << "error in select: " << WSAGetLastError() << '\n';
+        return false;
+    }
+    else if (selectResult == 0)
+    {
+        //returns when there is nothing to read
+        cout << "no message to read" << '\n';
+        return false;
+    }
+
     //set the address and buffer
     sockaddr_in senderAddress;
     int senderAddressSize = sizeof(senderAddress);
 
-    //check if you read the start before
-    if (readStart)
-        (*message).insert((*message).end(), receiveBuffer, receiveBuffer + bytesReceived);
-
-    //set that the start of the next message is not read
-    readStart = false;
-
-    //variables to use while receiving the message
-    int portReceivedFrom;
-    bool first = true;
-    string ipReceivedFrom = "";
-
-    //receive the message
-    do
+    bytesReceived = recvfrom(mySocket, receiveBuffer, sizeof(receiveBuffer), 0, (struct sockaddr*)&senderAddress, &senderAddressSize);
+    if (bytesReceived == SOCKET_ERROR)
     {
-        //set the time of delay
-        timeval timeout;
-        timeout.tv_sec = 0;
-        timeout.tv_usec = 0;
+        //check if there is an error
+        cout << "error receiving message: " << WSAGetLastError() << '\n';
+        return false;
+    }
 
-        //set up the file descriptor set for select
-        fd_set readSet;
-        FD_ZERO(&readSet);
-        FD_SET(mySocket, &readSet);
+    /////////////////////////////////////////////////////////
+    cout << "Received " << bytesReceived << " bytes: " << '\n';
+    cout << hex;
+    for (int a = 0; a < bytesReceived; a++)
+        cout << hex << setw(2) << std::setfill('0') << static_cast<unsigned>(static_cast<unsigned char>(receiveBuffer[a])) << ' ';
+    cout << dec << '\n' << '\n';
 
-        //checks to see if there is data waiting to be read
-        int selectResult = select(0, &readSet, nullptr, nullptr, &timeout);
-        if (selectResult == SOCKET_ERROR)
-        {
-            //handles an error
-            std::cerr << "error in select: " << WSAGetLastError() << '\n';
-            return false;
-        }
-        else if (selectResult == 0)
-        {
-            //returns when there is nothing to read
-            cout << "time has ended" << '\n';
-            return false;
-        }
-
-        bytesReceived = recvfrom(mySocket, receiveBuffer, sizeof(receiveBuffer), 0, (struct sockaddr*)&senderAddress, &senderAddressSize);
-        if (bytesReceived == SOCKET_ERROR)
-        {
-            //check if there is an error
-            std::cerr << "error receiving message: " << WSAGetLastError() << '\n';
-            return false;
-        }
-
+    if (receiveBuffer[0] == 0)
+    {
+        //needs to save sender's ip and port
         char senderIpStr[INET_ADDRSTRLEN];
         if (inet_ntop(AF_INET, &senderAddress.sin_addr, senderIpStr, sizeof(senderIpStr)) == nullptr)
         {
             cout << "error getting the sender's ip address" << '\n';
             return false;
         }
-
-        if (first)
-        {
-            //sets the details about the sender
-            first = false;
-            portReceivedFrom = ntohs(senderAddress.sin_port);
-            ipReceivedFrom = senderIpStr;
-        }
-        else if (strcmp(senderIpStr, ipReceivedFrom.c_str()) != 0 or portReceivedFrom != ntohs(senderAddress.sin_port))
-        {
-            //checks if the sender has changed - new message
-            readStart = true;
-            break;
-        }
-
-        //adds the block received to the rest of the message
-        (*message).insert((*message).end(), receiveBuffer, receiveBuffer + bytesReceived);
-
-    } while (bytesReceived == Read_Block_Size);
+        //saves the details about the sender
+        portReceivedFrom = ntohs(senderAddress.sin_port);
+        ipReceivedFrom = senderIpStr;
+    }
+    //adds the block received to the rest of the message
+    (*message).insert((*message).end(), receiveBuffer, receiveBuffer + bytesReceived);
 
     //returns that the message was read successfully
     return true;

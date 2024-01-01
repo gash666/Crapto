@@ -1,4 +1,6 @@
 #pragma once
+#ifndef NODE_SUPPORTERH
+#define NODE_SUPPORTERH
 #include <iostream>
 #include <boost/multiprecision/cpp_int.hpp>
 
@@ -19,3 +21,5 @@ void fillList(int, uint256_t*, vector <NodeDetails>*);
 void addNodeToTree(NodeDetails*);
 void removeNodeFromTree(uint256_t*);
 int getTreeSize();
+
+#endif

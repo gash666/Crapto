@@ -4,6 +4,9 @@
 #include "H_ECDSA.h"
 #include "H_Node_Supporter.h"
 #include "H_Network_Interface.h"
+#include "H_Init_Functions.h"
+#include "H_Message_Structure.h"
+#include "H_Variables.h"
 
 using namespace std;
 
@@ -68,13 +71,21 @@ bool testTree(vector <uint256_t> numbers)
 int main() 
 {
     srand(time(NULL));
+
     int n;
     cin >> n;
     if (n == 1)
     {
-        if (initSocket(true))
+        My_Ip[0] = 127;
+        My_Ip[0] = 0;
+        My_Ip[0] = 0;
+        My_Ip[0] = 1;
+        My_Port = 47832;
+        Is_Bootnode = true;
+        createKeys((unsigned char*)My_Id, (unsigned char*)My_Private_Key);
+
+        if (initSocket(true, My_Port))
         {
-            cout << "yay its fine" << '\n';
             cout << "the ip is: " << getIp() << '\n';
             cout << "the port is: " << getPort() << '\n';
             vector <char> message;
@@ -86,9 +97,7 @@ int main()
                     break;
                 message = {};
                 receiveMessage(&message);
-                cout << "message: ";
-                for (auto a : message)
-                    cout << a;
+                handleMessage(message.data(), message.size());
                 cout << '\n';
             }
         }
@@ -98,19 +107,9 @@ int main()
     {
         if (initSocket(true))
         {
-            cout << "yay its fine" << '\n';
             cout << "the ip is: " << getIp() << '\n';
             cout << "the port is: " << getPort() << '\n';
-            string message, ip;
-            int port;
-            cin >> ip >> port;
-            while (true)
-            {
-                cin >> message;
-                if (message == "-1")
-                    break;
-                sendMessage((char*)message.c_str(), (char*)ip.c_str(), port);
-            }
+            initValues();
         }
         closeSocket();
     }
