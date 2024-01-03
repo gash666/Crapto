@@ -10,7 +10,7 @@
 
 using namespace std;
 
-uint256_t secureRandomNum()
+/*uint256_t secureRandomNum()
 {
     //returns cryptographic secure random number
     if (RAND_status() != 1)
@@ -25,7 +25,7 @@ uint256_t secureRandomNum()
         randomValue += uint256_t(temp[a]);
     }
     return randomValue;
-}
+}*/
 
 bool comperasion(const NodeDetails& x, const NodeDetails& y) { return x.nodeID < y.nodeID; }
 
@@ -33,8 +33,8 @@ bool testTree(vector <uint256_t> numbers)
 {
     vector <NodeDetails> nodes;
     int t = rand() % min((int)numbers.size(), 30);
-    uint256_t temp = secureRandomNum();
-    fillList(t, &temp, &nodes);
+    //uint256_t temp = secureRandomNum();
+    //fillList(t, &temp, &nodes);
     /*sort(nodes.begin(), nodes.end(), comperasion);
     vector <uint256_t> numbersnow;
     for (int a = 0; a < numbers.size(); a++)

@@ -1,4 +1,5 @@
 #include <iostream>
+#define SODIUM_STATIC
 #include <sodium.h>
 
 unsigned char public_key[crypto_sign_PUBLICKEYBYTES];

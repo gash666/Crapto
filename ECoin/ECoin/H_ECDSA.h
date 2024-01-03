@@ -4,7 +4,7 @@
 #include <random>
 #include <algorithm>
 #include <sodium.h>
-#include <openssl/rand.h>
+//#include <openssl/rand.h>
 #include <boost/multiprecision/cpp_int.hpp>
 
 using namespace std;
