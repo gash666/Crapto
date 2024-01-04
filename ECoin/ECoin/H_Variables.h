@@ -26,8 +26,8 @@ extern int Number_Now;
 //structure for easier storage of data about nodes
 struct NodeData
 {
-	short nodePort = 47832;
-	string nodeIp = "127.0.0.1";
+	unsigned short nodePort;
+	string nodeIp;
 	char nodeId[32];
 };
 

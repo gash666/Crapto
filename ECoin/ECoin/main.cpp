@@ -76,11 +76,11 @@ int main()
     cin >> n;
     if (n == 1)
     {
-        My_Ip[0] = 127;
-        My_Ip[0] = 0;
-        My_Ip[0] = 0;
-        My_Ip[0] = 1;
-        My_Port = 47832;
+        My_Ip[0] = 77;
+        My_Ip[0] = 137;
+        My_Ip[0] = 73;
+        My_Ip[0] = 244;
+        My_Port = 51647;
         Is_Bootnode = true;
         createKeys((unsigned char*)My_Id, (unsigned char*)My_Private_Key);
 

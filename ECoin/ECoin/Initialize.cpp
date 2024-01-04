@@ -9,7 +9,7 @@ char My_Private_Key[64];
 char My_Ip[4];
 unsigned short My_Port;
 int Number_Now = 0;
-NodeData Bootnode_Details[Number_Of_Bootnodes] = { {} };
+NodeData Bootnode_Details[Number_Of_Bootnodes] = { { (short) 51647, "77.137.73.244", 1 } };
 bool Is_Bootnode = false;
 
 void initValues()
@@ -18,7 +18,8 @@ void initValues()
 
 	Connect_0* message = new Connect_0{};
 	Handle_Connect_Create(message);
-	if (!sendMessage((char*)message, sizeof(Connect_0), (char*)Bootnode_Details[0].nodeIp.c_str(), Bootnode_Details[0].nodePort))
+	cout << Bootnode_Details[0].nodePort << '\n';
+	if (!sendMessage((char*)message, sizeof(Connect_0), (char*)Bootnode_Details[0].nodeIp.c_str(), (int) Bootnode_Details[0].nodePort))
 		cout << "error" << '\n';
 	else
 		cout << "sent the message!" << '\n';
@@ -36,7 +37,7 @@ void initValues()
 			break;
 		message = {};
 		receiveMessage(&mess);
-		handleMessage(mess.data(), mess.size());
+		handleMessage(mess.data(), (int) mess.size());
 		cout << '\n';
 	}
 	/*cout << "1: " << hex << message->messageId << '\n';

@@ -104,12 +104,12 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Libs\libsodium\include;C:\Libs\boost_1_83_0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\gavsh\OneDrive\מסמכים\Libs\libsodium\include;C:\Users\gavsh\OneDrive\מסמכים\Libs\boost_1_83_0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Libs\libsodium\x64\Debug\v143\static</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Users\gavsh\OneDrive\מסמכים\Libs\libsodium\x64\Debug\v143\static</AdditionalLibraryDirectories>
       <AdditionalDependencies>Ws2_32.lib;libsodium.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
