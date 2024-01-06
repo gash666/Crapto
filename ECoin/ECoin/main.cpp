@@ -77,10 +77,10 @@ int main()
     if (n == 1)
     {
         My_Ip[0] = 77;
-        My_Ip[0] = 137;
-        My_Ip[0] = 73;
-        My_Ip[0] = 244;
-        My_Port = 51647;
+        My_Ip[1] = 139;
+        My_Ip[2] = 1;
+        My_Ip[3] = 166;
+        My_Port = 51648;
         Is_Bootnode = true;
         createKeys((unsigned char*)My_Id, (unsigned char*)My_Private_Key);
 
@@ -109,7 +109,10 @@ int main()
         {
             cout << "the ip is: " << getIp() << '\n';
             cout << "the port is: " << getPort() << '\n';
-            initValues();
+            wstring username;
+            wcin >> username;
+            if (!initValues(username))
+                cout << "init went wrong" << '\n';
         }
         closeSocket();
     }

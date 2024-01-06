@@ -18,7 +18,10 @@ extern char My_Ip[4];
 extern unsigned short My_Port;
 
 //the number of the message, added to the milliseconds count times 10,000
-extern int Number_Now;
+extern long long Number_Now;
+
+//the number of coins the user holds
+extern double Number_Coins;
 
 //number of bootnodes
 #define Number_Of_Bootnodes 1

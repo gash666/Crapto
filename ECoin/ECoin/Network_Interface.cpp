@@ -5,8 +5,6 @@
 #include <ws2tcpip.h>
 #include <iomanip>
 
-//#pragma comment(lib, "iphlpapi.lib")
-
 using namespace std;
 
 SOCKET mySocket;

@@ -2,6 +2,6 @@
 #ifndef INITFUNCTIONSH
 #define INITFUNCTIONSH
 
-void initValues();
+bool initValues(wstring username);
 
 #endif

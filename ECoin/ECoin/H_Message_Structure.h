@@ -1,5 +1,4 @@
 #pragma once
-#pragma pack(1)
 #ifndef MESSAGE_STRUCTUREH
 #define MESSAGE_STRUCTUREH
 #include <boost/multiprecision/cpp_int.hpp>
