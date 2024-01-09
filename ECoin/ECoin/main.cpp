@@ -95,7 +95,6 @@ int main()
                 message = {};
                 receiveMessage(&message);
                 handleMessage(message.data(), message.size());
-                cout << '\n';
             }
         }
         closeSocket();
