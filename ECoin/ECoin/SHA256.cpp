@@ -19,6 +19,9 @@ void padding(string& input)
 
 string SHA256(string input)
 {
+    //adds padding for the input
+    padding(input);
+
     //constants for the algorithm
     constexpr uint32_t k[64] = 
     {
@@ -39,7 +42,8 @@ string SHA256(string input)
     uint32_t h5 = 0x9b05688c;
     uint32_t h6 = 0x1f83d9ab;
     uint32_t h7 = 0x5be0cd19;
-    padding(input);
+
+    //process the input in blocks of 512 bits
     for (size_t i = 0; i < input.length(); i += 64) 
     {
         //break the block into 16 32-bit words
@@ -52,7 +56,7 @@ string SHA256(string input)
                 (static_cast<uint8_t>(input[i + j * 4 + 3]));
         }
 
-        //extend the first 16 words into the remaining 48 words
+        //extend the first 16 words into the remaining 48 places
         for (int j = 16; j < 64; ++j) 
         {
             uint32_t s0 = (w[j - 15] >> 7 | w[j - 15] << 25) ^ (w[j - 15] >> 18 | w[j - 15] << 14) ^ (w[j - 15] >> 3);

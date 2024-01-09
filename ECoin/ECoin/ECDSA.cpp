@@ -27,6 +27,15 @@ bool verifySignature(const unsigned char* message, size_t message_len, const uns
     return crypto_sign_verify_detached(signature, message, message_len, public_key) == 0;
 }
 
+void setKey(unsigned char* pubKey, unsigned char* privKey)
+{
+    //copies the keys into their places in this file
+    for (int a = 0; a < crypto_sign_PUBLICKEYBYTES; a++)
+        public_key[a] = pubKey[a];
+    for (int a = 0; a < crypto_sign_SECRETKEYBYTES; a++)
+        secret_key[a] = privKey[a];
+}
+
 unsigned char* getPublicKey()
 {
     //return the public key

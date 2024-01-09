@@ -7,5 +7,6 @@ using namespace std;
 
 vector <NodeDetails> getClosest(uint256_t target)
 {
+
 	return {};
 }

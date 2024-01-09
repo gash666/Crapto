@@ -92,9 +92,6 @@ int main()
             int t;
             while (true)
             {
-                cin >> t;
-                if (t == -1)
-                    break;
                 message = {};
                 receiveMessage(&message);
                 handleMessage(message.data(), message.size());

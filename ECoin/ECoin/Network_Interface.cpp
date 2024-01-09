@@ -181,12 +181,8 @@ bool receiveMessage(vector <char>* message)
         cout << "error in select: " << WSAGetLastError() << '\n';
         return false;
     }
-    else if (selectResult == 0)
-    {
-        //returns when there is nothing to read
-        cout << "no message to read" << '\n';
+    else if (selectResult == 0) //returns when there is nothing to read
         return false;
-    }
 
     //set the address and buffer
     sockaddr_in senderAddress;

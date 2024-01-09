@@ -16,6 +16,7 @@ void signMessage(const unsigned char* message, size_t message_len, unsigned char
 bool verifySignature(const unsigned char* message, size_t message_len, const unsigned char* public_key, const unsigned char* signature);
 unsigned char* getPublicKey();
 unsigned char* getPrivateKey();
+void setKey(unsigned char* pubKey, unsigned char* privKey);
 
 //from SHA256.cpp
 string SHA256(string);

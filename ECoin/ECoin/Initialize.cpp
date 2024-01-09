@@ -33,9 +33,7 @@ void turnToASCII(char* place, char* value, int size)
 	for (int a = 0; a < size; a++)
 	{
 		place[a * 2] = getFromInt((value[a] >> 4) & 0xF);
-		cout << getFromInt((value[a] >> 4) & 0xF);
 		place[a * 2 + 1] = getFromInt(value[a] & 0xF);
-		cout << getFromInt(value[a] & 0xF);
 	}
 }
 
@@ -207,6 +205,9 @@ bool loadFromFile(wstring username)
 		//convert the char array into double
 		memcpy(&Number_Coins, tempNumberCoins, sizeof(double));
 
+		//sets the public and private keys as the ones read from the file
+		setKey((unsigned char*) My_Id, (unsigned char*) My_Private_Key);
+
 		//close the handle
 		CloseHandle(readFile);
 	}
@@ -216,7 +217,7 @@ bool loadFromFile(wstring username)
 		//initialize the required variables for the database file
 		CloseHandle(createFile);
 		createKeys((unsigned char*)My_Id, (unsigned char*)My_Private_Key);
-		//Number_Coins = 0;
+		Number_Coins = 0;
 
 		//call for the function that updates the database file with the values of the
 		if (!loadIntoFile())
@@ -230,7 +231,7 @@ bool initValues(wstring username)
 	//initializes the keys and how much money the user has
 	if (!loadFromFile(username))
 		return false;
-	
+
 	//sends a message to the bootnode to get the node's ip and port outside the NAT
 	Connect_0* message = new Connect_0{};
 	Handle_Connect_Create(message);
