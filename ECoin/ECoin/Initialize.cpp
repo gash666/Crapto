@@ -7,6 +7,7 @@
 #include <Windows.h>
 #include <iomanip>
 
+uint256_t My_Id_As_Number;
 char My_Id[32];
 char My_Private_Key[64];
 char My_Ip[4];
@@ -16,6 +17,17 @@ NodeData Bootnode_Details[Number_Of_Bootnodes] = { { (unsigned short) 51648, "77
 bool Is_Bootnode = false;
 double Number_Coins;
 wstring Database_Path;
+
+void setIdAsNumber()
+{
+	//sets the node's id as a uint256_t variable that can be used easily
+	uint256_t temp;
+	for (int a = 0; a < 32; a++)
+	{
+		temp = static_cast<uint8_t>(My_Id[a]);
+		My_Id_As_Number = (My_Id_As_Number << 8) | temp;
+	}
+}
 
 char getFromInt(int val)
 {

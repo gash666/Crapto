@@ -5,6 +5,9 @@
 #include <boost/multiprecision/cpp_int.hpp>
 #include "H_Node_Supporter.h"
 
+//the node's id as a uint256_t variable
+extern uint256_t My_Id_As_Number;
+
 //the node's id
 extern char My_Id[32];
 

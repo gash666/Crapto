@@ -5,6 +5,7 @@
 #include <boost/multiprecision/cpp_int.hpp>
 #include "H_Node_Supporter.h"
 #include "H_Constants.h"
+#include "H_Variables.h"
 
 using namespace std;
 using namespace boost::multiprecision;
@@ -246,6 +247,7 @@ Node* tree;
 int getBucket(uint256_t id)
 {
 	//returns the bucket for node with certain id
+	id ^= My_Id_As_Number;
 	if (id >> (64 * 3) != 0)
 		return 255 - _lzcnt_u64((ULL)(id >> (64 * 3) & 0xFFFFFFFFFFFFFFFF));
 	if (id >> (64 * 2) != 0)
@@ -253,7 +255,6 @@ int getBucket(uint256_t id)
 	if (id >> 64 != 0)
 		return 255 - 64 * 2 - _lzcnt_u64((ULL)(id >> 64 & 0xFFFFFFFFFFFFFFFF));
 	return 255 - 64 * 3 - _lzcnt_u64((ULL)(id));
-	return 0;
 }
 
 bool canEnterBucket(NodeDetails addnew)

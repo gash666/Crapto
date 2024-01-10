@@ -137,7 +137,7 @@ bool sendMessage(char* message, int len, char* receivingIp, int receivingPort)
     else
     {
         /////////////////////////////////////////////////////////////
-        cout << "Sent " << bytesSent << " to " << receivingIp << " " << unsigned (receivingPort) << " bytes: " << '\n';
+        cout << "Sent to " << receivingIp << " " << unsigned (receivingPort) << " " << bytesSent << " bytes: " << '\n';
         cout << hex;
         for (int a = 0; a < len; a++)
             cout << hex << setw(2) << std::setfill('0') << static_cast<unsigned>(static_cast<unsigned char>(message[a])) << ' ';
