@@ -61,6 +61,11 @@ void MonitorAfterPing()
                 waitForAnswer.erase(nodeNow.first);
                 canChangePingedQueue.unlock();
                 removeNodeFromTreeInd(nodeNow.first.nodeID, 0);
+
+                //ping the user again after deleting him
+                Ask_Ping_4* message = new Ask_Ping_4{};
+                Handle_Ask_Ping_Create(&(nodeNow.first), message);
+                sendMessage((char*)message, sizeof(Ask_Ping_4), nodeNow.first.ip, nodeNow.first.port);
             }
             else
             {
@@ -196,7 +201,10 @@ void getClosest(char target[32], int triesImprove)
     //initialize and find the closest to the id that the user knows about
     NodeDetails closestNow[Bucket_Size], closestBefore[Bucket_Size];
     for (int a = 0; a < Bucket_Size; a++)
+    {
         closestNow[a].port = 0;
+        closestBefore[a].port = 0;
+    }
     fillListInd(Bucket_Size, target, closestNow, 0);
     Ask_Close_2* ans = new Ask_Close_2{};
 
@@ -211,6 +219,10 @@ void getClosest(char target[32], int triesImprove)
     //creates a tree
     char indexForTree = occupyNewTree();
     threadDetails.whereToAnswer = &indexForTree;
+    for (int a = 0; a < Bucket_Size; a++)
+        if (closestNow[a].port != 0)
+            addNodeToTreeInd(&closestNow[a], indexForTree);
+    setHasSentInd(&My_Details, indexForTree);
 
     //adds the struct to the vector
     CanChangeCommWithThreads.lock();
@@ -250,9 +262,9 @@ void getClosest(char target[32], int triesImprove)
 
     //adds the closest nodes to the tree
     for (int a = 0; a < Bucket_Size; a++)
-        if (memcmp(&closestNow[a], &zeroNode, sizeof(NodeDetails)) == 0)
+        if (closestNow[a].port == 0)
             break;
-        else
+        else if (memcmp(&closestNow[a], &My_Details, sizeof(NodeDetails)) != 0)
             Update_Ping_Timer(&closestNow[a]);
 
     //frees the tree so others could use it
@@ -269,6 +281,7 @@ void getClosest(char target[32], int triesImprove)
             break;
         }
     CanChangeCommWithThreads.unlock();
+    cout << "out of close!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << '\n';//*/
 }
 
 void discoverNodesInTheNetwork()

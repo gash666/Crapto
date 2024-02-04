@@ -87,7 +87,7 @@ void Handle_Answer_Close_Create(char* closeTo, Answer_Close_3* ans)
     for (int a = 0; a < Bucket_Size; a++)
         ans->answerClose[a].port = 0;
     fillListInd(Bucket_Size, closeTo, ans->answerClose, 0);
-    copy(closeTo, closeTo + sizeof(closeTo), ans->target);
+    copy(closeTo, closeTo + 32, ans->target);
     signMessage((const unsigned char*)ans, sizeof(Answer_Close_3) - 64, (unsigned char*)&(ans->signature));
 }
 

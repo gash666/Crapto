@@ -16,7 +16,7 @@
 #define Need_Exit 0
 
 //time in milliseconds that passes from the last message from a user until you ping him
-#define Time_To_Ping 60000
+#define Time_To_Ping 20000
 
 //time for thread to try and block in the mutex before it needs to read about a ping
 #define Time_Before 1000

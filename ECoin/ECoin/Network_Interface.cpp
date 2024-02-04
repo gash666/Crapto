@@ -3,6 +3,7 @@
 #include "H_Constants.h"
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#include <mutex>
 #include <iomanip>
 
 using namespace std;
@@ -136,10 +137,13 @@ void turnIpToString(unsigned char* ipAsChar)
     }
 }
 
+mutex canUseSocket;
+
 bool sendMessage(char* message, int len, char* receivingIp, int receivingPort, bool asIs = false)
 {
     //sends a message
     //sets the address of the receiver
+    lock_guard <mutex> lock(canUseSocket);
     sockaddr_in destinationAddress;
     destinationAddress.sin_family = AF_INET;
     destinationAddress.sin_port = htons(receivingPort);
@@ -187,6 +191,7 @@ int receiveMessage(char* receiveBuffer)
 {
     //receives a message
     //set the time of delay
+    lock_guard <mutex> lock(canUseSocket);
     timeval timeout;
     timeout.tv_sec = 0;
     timeout.tv_usec = 0;
@@ -210,6 +215,8 @@ int receiveMessage(char* receiveBuffer)
     //set the address and buffer
     sockaddr_in senderAddress;
     int senderAddressSize = sizeof(senderAddress);
+
+    cout << "here!!!!!" << '\n';
 
     bytesReceived = recvfrom(mySocket, receiveBuffer, Maximum_Message_Size, 0, (struct sockaddr*)&senderAddress, &senderAddressSize);
     if (bytesReceived == SOCKET_ERROR)

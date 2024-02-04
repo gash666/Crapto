@@ -121,15 +121,18 @@ void Handle_Answer_Close_Process(char* message, int len)
 	threadDetails.threadMessageId = DONT_EXIST;
 	CanChangeCommWithThreads.lock();
 	for (int a = 0; a < commWithThreadsDetails.size(); a++)
-		if (commWithThreadsDetails[a].threadMessageId == ANSWER_CLOSE and memcmp(commWithThreadsDetails[a].whereToCompare, message + offsetof(Answer_Close_3, signature), 32) == 0)
+		if (commWithThreadsDetails[a].threadMessageId == ANSWER_CLOSE)// and memcmp(commWithThreadsDetails[a].whereToCompare, message + offsetof(Answer_Close_3, target), 32) == 0)
+		{
+			cout << "here, problem with copy" << '\n';
 			copy(&commWithThreadsDetails[a], (Communication_With_Threads*)((char*)&commWithThreadsDetails[a] + sizeof(Communication_With_Threads)), &threadDetails);
+		}
 
 	//check if a proper thread was found
 	if (threadDetails.threadMessageId != DONT_EXIST)
 	{
 		threadDetails.canAccessThis->lock();
 		CanChangeCommWithThreads.unlock();
-		
+
 		//get the index of the tree
 		char newInd = threadDetails.whereToAnswer[0];
 

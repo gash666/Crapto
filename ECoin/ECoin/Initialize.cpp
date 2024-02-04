@@ -299,13 +299,15 @@ bool initValues(wstring username)
 	}
 	cout << '\n' << "my port is: " << getPort() << '\n';
 
+	chrono::milliseconds sleepNoMessageWaiting(100);
+
 	while (true)
 	{
 		int messageLength = receiveMessage(Buffer_For_Receiving_Messages);
 		if (messageLength != -1)
-		{
 			handleMessage(Buffer_For_Receiving_Messages, messageLength);
-		}
+		else
+			this_thread::sleep_for(sleepNoMessageWaiting);
 	}
 
 	return true;
