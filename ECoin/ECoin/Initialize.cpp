@@ -1,33 +1,26 @@
+#include <boost/asio.hpp>
 #include "H_Variables.h"
 #include "H_Constants.h"
 #include "H_Message_Structure.h"
+#include "H_Network_Operations.h"
 #include "H_Network_Interface.h"
+#include "H_Node_Supporter.h"
 #include "H_ECDSA.h"
 #include <iostream>
 #include <Windows.h>
 #include <iomanip>
 
-uint256_t My_Id_As_Number;
-char My_Id[32];
+NodeDetails My_Details;
 char My_Private_Key[64];
-char My_Ip[4];
-unsigned short My_Port;
 long long Number_Now;
-NodeData Bootnode_Details[Number_Of_Bootnodes] = { { (unsigned short) 51648, "77.139.1.166", 1 } };
 bool Is_Bootnode = false;
 double Number_Coins;
+char Buffer_For_Receiving_Messages[Maximum_Message_Size];
 wstring Database_Path;
-
-void setIdAsNumber()
-{
-	//sets the node's id as a uint256_t variable that can be used easily
-	uint256_t temp;
-	for (int a = 0; a < 32; a++)
-	{
-		temp = static_cast<uint8_t>(My_Id[a]);
-		My_Id_As_Number = (My_Id_As_Number << 8) | temp;
-	}
-}
+NodeDetails Bootnode_Details[Number_Of_Bootnodes];
+NodeDetails zeroNode;
+vector <Communication_With_Threads> commWithThreadsDetails;
+mutex CanChangeCommWithThreads;
 
 char getFromInt(int val)
 {
@@ -55,13 +48,13 @@ bool loadIntoFile()
 	char dataToWrite[Data_Base_File_Size];
 	turnToASCII(dataToWrite, My_Private_Key, 64);
 	dataToWrite[128] = '\n';
-	turnToASCII(&dataToWrite[129], My_Id, 32);
+	turnToASCII(&(dataToWrite[129]), My_Details.nodeID, 32);
 	dataToWrite[193] = '\n';
 
 	//convert the amount of money into char array
 	char tempNumberCoins[sizeof(double)];
 	memcpy(tempNumberCoins, &Number_Coins, sizeof(double));
-	turnToASCII(&dataToWrite[194], tempNumberCoins, sizeof(double));
+	turnToASCII(&(dataToWrite[194]), tempNumberCoins, sizeof(double));
 
 	//creates a handle for writing into the database file
 	HANDLE fileHandle = CreateFile(
@@ -209,7 +202,7 @@ bool loadFromFile(wstring username)
 
 		//reads the data from the buffer into the corresponding variables
 		turnToChar(My_Private_Key, filedata, 64);
-		turnToChar(My_Id, filedata + 128 + 1, 32);
+		turnToChar(My_Details.nodeID, filedata + 128 + 1, 32);
 
 		char tempNumberCoins[sizeof(double)];
 		turnToChar(tempNumberCoins, filedata + 128 + 64 + 2, sizeof(double));
@@ -218,7 +211,7 @@ bool loadFromFile(wstring username)
 		memcpy(&Number_Coins, tempNumberCoins, sizeof(double));
 
 		//sets the public and private keys as the ones read from the file
-		setKey((unsigned char*) My_Id, (unsigned char*) My_Private_Key);
+		setKey((unsigned char*) My_Details.nodeID, (unsigned char*) My_Private_Key);
 
 		//close the handle
 		CloseHandle(readFile);
@@ -228,7 +221,7 @@ bool loadFromFile(wstring username)
 		//create the file and initialize it
 		//initialize the required variables for the database file
 		CloseHandle(createFile);
-		createKeys((unsigned char*)My_Id, (unsigned char*)My_Private_Key);
+		createKeys((unsigned char*)My_Details.nodeID, (unsigned char*)My_Private_Key);
 		Number_Coins = 0;
 
 		//call for the function that updates the database file with the values of the
@@ -244,25 +237,76 @@ bool initValues(wstring username)
 	if (!loadFromFile(username))
 		return false;
 
+	//initializes the values for the bootnode list
+	char tempIp[4] = { (char)77, (char)139, (char)1, (char)166 };
+	//char tempID[32] = {};
+	char tempID[32];
+	if (Is_Bootnode)
+		for (int a = 0; a < 32; a++)
+			tempID[a] = My_Details.nodeID[a];
+	Bootnode_Details[0].port = (unsigned short)51648;
+	memcpy(Bootnode_Details[0].ip, tempIp, 4);
+	memcpy(Bootnode_Details[0].nodeID, tempID, 32);
+
+	//creates trees for the communication and for staking pool operator 
+	occupyNewTree();
+	occupyNewTree();
+
+	//create the thread pool
+	boost::asio::thread_pool pool(Number_Of_Threads);
+
+	//monitor ping messages
+	post(pool, [] { MonitorAfterPing(); });
+	post(pool, [] { MonitorBeforePing(); });
+
 	//sends a message to the bootnode to get the node's ip and port outside the NAT
-	Connect_0* message = new Connect_0{};
-	Handle_Connect_Create(message);
-	if (!sendMessage((char*)message, sizeof(Connect_0), (char*)Bootnode_Details[0].nodeIp.c_str(), (int)Bootnode_Details[0].nodePort))
+	if (!Is_Bootnode)
 	{
-		cout << "error sending message to bootnode while initializing " << '\n';
-		return false;
+		//if the user is not a bootnode, send a message asking for the port and ip outside of the NAT
+		initSocket(true);
+		if (!connectToBootnode(false))
+		{
+			cout << "error connecting to the network" << '\n';
+			return false;
+		}
+		else
+		{
+			//adds this user as a node known to the user
+			addNodeToTreeInd(&My_Details, 0);
+			post(pool, [] { discoverNodesInTheNetwork(); });
+		}
+	}
+	else
+	{
+		//set the id port and ip to those of the bootnode
+		copy(&Bootnode_Details[0], (NodeDetails*)((char*)&Bootnode_Details[0] + sizeof(NodeDetails)), &My_Details);
+		initSocket(true, My_Details.port);
+
+		//adds this user as a node known to the user
+		addNodeToTreeInd(&My_Details, 0);
+
+		//if the network is already online, discover other nodes
+		if (connectToBootnode(true))
+			post(pool, [] { discoverNodesInTheNetwork(); });
 	}
 
-	int t;
-	vector <char> mess;
+	cout << "my ip is: ";
+	for (int a = 0; a < 4; a++)
+	{
+		cout << int((unsigned char)My_Details.ip[a]);
+		if (a != 3)
+			cout << ".";
+	}
+	cout << '\n' << "my port is: " << getPort() << '\n';
+
 	while (true)
 	{
-		cin >> t;
-		if (t == -1)
-			break;
-		message = {};
-		receiveMessage(&mess);
-		handleMessage(mess.data(), (int) mess.size());
+		int messageLength = receiveMessage(Buffer_For_Receiving_Messages);
+		if (messageLength != -1)
+		{
+			handleMessage(Buffer_For_Receiving_Messages, messageLength);
+		}
 	}
+
 	return true;
 }

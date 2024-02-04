@@ -118,14 +118,38 @@ bool initSocket(bool firstTime = false, int listenPort = -1)
     return true;
 }
 
-bool sendMessage(char* message, int len, char* receivingIp, int receivingPort)
+//stores the ip from the function
+string tempIp = "";
+
+void turnIpToString(unsigned char* ipAsChar)
+{
+    tempIp = "";
+    for (int a = 0; a < 4; a++)
+    {
+        if (ipAsChar[a] >= 100)
+            tempIp += ipAsChar[a] / 100 + '0';
+        if (ipAsChar[a] >= 10)
+            tempIp += (ipAsChar[a] / 10) % 10 + '0';
+        tempIp += ipAsChar[a] % 10 + '0';
+        if (a != 3)
+            tempIp += '.';
+    }
+}
+
+bool sendMessage(char* message, int len, char* receivingIp, int receivingPort, bool asIs = false)
 {
     //sends a message
     //sets the address of the receiver
     sockaddr_in destinationAddress;
     destinationAddress.sin_family = AF_INET;
     destinationAddress.sin_port = htons(receivingPort);
-    inet_pton(AF_INET, receivingIp, &destinationAddress.sin_addr);
+    if (!asIs)
+    {
+        turnIpToString((unsigned char*)receivingIp);
+        inet_pton(AF_INET, tempIp.c_str(), &destinationAddress.sin_addr);
+    }
+    else
+        inet_pton(AF_INET, receivingIp, &destinationAddress.sin_addr);
 
     //sends the message and handles errors
     int bytesSent = sendto(mySocket, message, (size_t)len, 0, (struct sockaddr*)&destinationAddress, sizeof(destinationAddress));
@@ -137,7 +161,7 @@ bool sendMessage(char* message, int len, char* receivingIp, int receivingPort)
     else
     {
         /////////////////////////////////////////////////////////////
-        cout << "Sent to " << receivingIp << " " << unsigned (receivingPort) << " " << bytesSent << " bytes: " << '\n';
+        cout << "Sent to " << tempIp << " " << unsigned short(receivingPort) << " " << bytesSent << " bytes: " << '\n';
         cout << hex;
         for (int a = 0; a < len; a++)
             cout << hex << setw(2) << std::setfill('0') << static_cast<unsigned>(static_cast<unsigned char>(message[a])) << ' ';
@@ -149,7 +173,6 @@ bool sendMessage(char* message, int len, char* receivingIp, int receivingPort)
 }
 
 //saves the start of a different message if read accidentaly
-char receiveBuffer[Maximum_Message_Size];
 int bytesReceived;
 int portReceivedFrom;
 string ipReceivedFrom = "";
@@ -160,7 +183,7 @@ pair <string, int> getAddress()
     return { ipReceivedFrom, portReceivedFrom };
 }
 
-bool receiveMessage(vector <char>* message)
+int receiveMessage(char* receiveBuffer)
 {
     //receives a message
     //set the time of delay
@@ -179,21 +202,21 @@ bool receiveMessage(vector <char>* message)
     {
         //handles an error
         cout << "error in select: " << WSAGetLastError() << '\n';
-        return false;
+        return -1;
     }
     else if (selectResult == 0) //returns when there is nothing to read
-        return false;
+        return -1;
 
     //set the address and buffer
     sockaddr_in senderAddress;
     int senderAddressSize = sizeof(senderAddress);
 
-    bytesReceived = recvfrom(mySocket, receiveBuffer, sizeof(receiveBuffer), 0, (struct sockaddr*)&senderAddress, &senderAddressSize);
+    bytesReceived = recvfrom(mySocket, receiveBuffer, Maximum_Message_Size, 0, (struct sockaddr*)&senderAddress, &senderAddressSize);
     if (bytesReceived == SOCKET_ERROR)
     {
         //check if there is an error
         cout << "error receiving message: " << WSAGetLastError() << '\n';
-        return false;
+        return -1;
     }
 
     /////////////////////////////////////////////////////////
@@ -210,15 +233,13 @@ bool receiveMessage(vector <char>* message)
         if (inet_ntop(AF_INET, &senderAddress.sin_addr, senderIpStr, sizeof(senderIpStr)) == nullptr)
         {
             cout << "error getting the sender's ip address" << '\n';
-            return false;
+            return -1;
         }
         //saves the details about the sender
         portReceivedFrom = ntohs(senderAddress.sin_port);
         ipReceivedFrom = senderIpStr;
     }
-    //adds the block received to the rest of the message
-    (*message).insert((*message).end(), receiveBuffer, receiveBuffer + bytesReceived);
 
     //returns that the message was read successfully
-    return true;
+    return bytesReceived;
 }

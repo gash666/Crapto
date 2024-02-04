@@ -1,14 +1,9 @@
 #pragma once
-#ifndef ECDSAH
-#define ECDSAH
 #include <random>
 #include <algorithm>
 #include <sodium.h>
-//#include <openssl/rand.h>
-#include <boost/multiprecision/cpp_int.hpp>
 
 using namespace std;
-using namespace boost::multiprecision;
 
 //from ECDSA.cpp
 void createKeys(unsigned char* public_key_buf, unsigned char* secret_key_buf);
@@ -20,5 +15,3 @@ void setKey(unsigned char* pubKey, unsigned char* privKey);
 
 //from SHA256.cpp
 string SHA256(string);
-
-#endif

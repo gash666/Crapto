@@ -150,6 +150,7 @@
     <ClInclude Include="H_Init_Functions.h" />
     <ClInclude Include="H_Message_Structure.h" />
     <ClInclude Include="H_Network_Interface.h" />
+    <ClInclude Include="H_Network_Operations.h" />
     <ClInclude Include="H_Node_Supporter.h" />
     <ClInclude Include="H_Variables.h" />
   </ItemGroup>

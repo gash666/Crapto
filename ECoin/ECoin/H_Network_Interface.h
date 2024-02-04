@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NETWORK_INTERFACEH
-#define NETWORK_INTER
 #include <iostream>
 #include <vector>
 
@@ -12,7 +10,5 @@ void closeSocket();
 int getPort();
 string getIp();
 pair <string, int> getAddress();
-bool sendMessage(char* message, int len, char* receivingIp, int receivingPort);
-bool receiveMessage(vector <char>* message);
-
-#endif
+bool sendMessage(char* message, int len, char* receivingIp, int receivingPort, bool asIs = false);
+int receiveMessage(char* message);
