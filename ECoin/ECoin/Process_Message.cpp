@@ -135,7 +135,7 @@ void Handle_Answer_Close_Process(char* message, int len)
 
 		//add the nodes to the tree
 		for (int a = 0; a < Bucket_Size; a++)
-			if (memcmp(&zeroNode, &m->answerClose[a], sizeof(NodeDetails)) == 0)
+			if (m->answerClose[a].port == 0)
 				break;
 			else
 				addNodeToTreeInd(&m->answerClose[a], newInd);

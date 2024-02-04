@@ -180,9 +180,13 @@ void Node::findClose(int howmany, char* val)
 {
 	//finds the howmany closest node ids in xor distance to *val
 	if (tsize == 0)
+	{
 		cout << "error went to 0" << '\n';
+		return;
+	}
 	if (rp != NULL and lp != NULL)
 	{
+		cout << "tsize here: " << tsize << " left: " << lp->tsize << " right: " << rp->tsize << '\n';
 		if (getbit(val, level))
 		{
 			//if rp is closer, go to it first
@@ -199,12 +203,14 @@ void Node::findClose(int howmany, char* val)
 	}
 	else if (rp != NULL)
 	{
+		cout << "tsize here: " << tsize << " right: " << rp->tsize << '\n';
 		//if rp is the only way forward go to it
 		rp->findClose(howmany, val);
 		return;
 	}
 	else if (lp != NULL)
 	{
+		cout << "tsize here: " << tsize << " left: " << lp->tsize << '\n';
 		//if lp is the only way forward go to it
 		lp->findClose(howmany, val);
 		return;

@@ -9,7 +9,7 @@ struct NodeDetails
 {
 	char nodeID[32];
 	char ip[4];
-	short port;
+	unsigned short port;
 
 	//operator for map
 	bool operator<(const NodeDetails& other) const

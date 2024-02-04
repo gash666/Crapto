@@ -195,6 +195,8 @@ void getClosest(char target[32], int triesImprove)
     //finds the closest nodes to a certain id and adds them to the tree
     //initialize and find the closest to the id that the user knows about
     NodeDetails closestNow[Bucket_Size], closestBefore[Bucket_Size];
+    for (int a = 0; a < Bucket_Size; a++)
+        closestNow[a].port = 0;
     fillListInd(Bucket_Size, target, closestNow, 0);
     Ask_Close_2* ans = new Ask_Close_2{};
 
@@ -223,7 +225,7 @@ void getClosest(char target[32], int triesImprove)
         for (int a = 0; a < Bucket_Size; a++)
         {
             //checks if the node exists
-            if (memcmp(&closestNow[a], &zeroNode, sizeof(NodeDetails)) == 0)
+            if (closestNow[a].port == 0)
                 break;
 
             //check if the node already answered to this message
