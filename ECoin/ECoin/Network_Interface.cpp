@@ -216,8 +216,6 @@ int receiveMessage(char* receiveBuffer)
     sockaddr_in senderAddress;
     int senderAddressSize = sizeof(senderAddress);
 
-    cout << "here!!!!!" << '\n';
-
     bytesReceived = recvfrom(mySocket, receiveBuffer, Maximum_Message_Size, 0, (struct sockaddr*)&senderAddress, &senderAddressSize);
     if (bytesReceived == SOCKET_ERROR)
     {

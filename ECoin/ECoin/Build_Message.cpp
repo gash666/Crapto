@@ -73,7 +73,7 @@ void Handle_Ask_Close_Create(char* closeTo, Ask_Close_2* ans)
     ans->messageId = ASK_CLOSE;
     ans->messageNumber = Get_Message_Number();
     copy(&My_Details, (NodeDetails*)((char*)&My_Details + sizeof(NodeDetails)), &ans->senderDetails);
-    copy(closeTo, closeTo + sizeof(closeTo), ans->target);
+    copy(closeTo, closeTo + 32, ans->target);
     signMessage((const unsigned char*)ans, sizeof(Ask_Close_2) - 64, (unsigned char*)&(ans->signature));
 }
 

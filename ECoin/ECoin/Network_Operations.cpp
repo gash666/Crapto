@@ -234,6 +234,7 @@ void getClosest(char target[32], int triesImprove)
     //find the closest with the help of other users
     while (timesSame < triesImprove)
     {
+        int numMessagesSent = 0;
         for (int a = 0; a < Bucket_Size; a++)
         {
             //checks if the node exists
@@ -244,6 +245,7 @@ void getClosest(char target[32], int triesImprove)
             if (!getHasSentInd(&closestNow[a], indexForTree))
             {
                 //sends a message to the node
+                numMessagesSent++;
                 Handle_Ask_Close_Create(target, ans);
                 sendMessage((char*)ans, sizeof(Ask_Close_2), closestNow[a].ip, closestNow[a].port);
             }
@@ -251,7 +253,8 @@ void getClosest(char target[32], int triesImprove)
         swap(closestBefore, closestNow);
 
         //wait for answers to arrive
-        this_thread::sleep_for(timeToWaitForResponse);
+        if (numMessagesSent != 0)
+            this_thread::sleep_for(timeToWaitForResponse);
 
         fillListInd(Bucket_Size, target, closestNow, indexForTree);
         if (memcmp(closestNow, closestBefore, sizeof(NodeDetails) * Bucket_Size) != 0)
@@ -281,14 +284,19 @@ void getClosest(char target[32], int triesImprove)
             break;
         }
     CanChangeCommWithThreads.unlock();
-    cout << "out of close!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << '\n';//*/
 }
 
 void discoverNodesInTheNetwork()
 {
     //fills the bucket list with nodes from the network
-    getClosest(My_Details.nodeID, 4);
-    //int temp;
-    //for (int a = temp; a >= 0; a--)
-    //    getClosest(My_Details.nodeID, 2);
+    char targetForCloseTo[32];
+    copy(My_Details.nodeID, My_Details.nodeID + 32, targetForCloseTo);
+    getClosest(targetForCloseTo, 4);
+    int temp = getLastBucket();
+    for (int a = temp; a >= 0; a--)
+    {
+        targetForCloseTo[(256 - a) / 8] ^= char (1 << (7 - (256 - a) % 8));
+        getClosest(targetForCloseTo, 2);
+        targetForCloseTo[(256 - a) / 8] ^= char (1 << (7 - (256 - a) % 8));
+    }
 }

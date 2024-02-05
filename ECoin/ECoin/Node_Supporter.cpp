@@ -186,7 +186,6 @@ void Node::findClose(int howmany, char* val)
 	}
 	if (rp != NULL and lp != NULL)
 	{
-		cout << "tsize here: " << tsize << " left: " << lp->tsize << " right: " << rp->tsize << '\n';
 		if (getbit(val, level))
 		{
 			//if rp is closer, go to it first
@@ -203,14 +202,12 @@ void Node::findClose(int howmany, char* val)
 	}
 	else if (rp != NULL)
 	{
-		cout << "tsize here: " << tsize << " right: " << rp->tsize << '\n';
 		//if rp is the only way forward go to it
 		rp->findClose(howmany, val);
 		return;
 	}
 	else if (lp != NULL)
 	{
-		cout << "tsize here: " << tsize << " left: " << lp->tsize << '\n';
 		//if lp is the only way forward go to it
 		lp->findClose(howmany, val);
 		return;
@@ -572,4 +569,13 @@ bool getHasSentInd(NodeDetails* askAbout, int ind)
 	//returns whether the user already sent a message
 	lock_guard <mutex> lock(*mutexVector[ind]);
 	return trees[ind]->getHasSent(askAbout);
+}
+
+int getLastBucket()
+{
+	//returns the index of the last bucket that has nodes in it
+	for (int a = 254; a >= 0; a--)
+		if (!buckets[a].empty())
+			return a;
+	return 0;
 }

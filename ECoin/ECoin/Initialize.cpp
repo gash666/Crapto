@@ -1,10 +1,10 @@
 #include <boost/asio.hpp>
 #include "H_Variables.h"
 #include "H_Constants.h"
-#include "H_Message_Structure.h"
 #include "H_Network_Operations.h"
 #include "H_Network_Interface.h"
 #include "H_Node_Supporter.h"
+#include "H_Message_Structure.h"
 #include "H_ECDSA.h"
 #include <iostream>
 #include <Windows.h>
@@ -21,6 +21,7 @@ NodeDetails Bootnode_Details[Number_Of_Bootnodes];
 NodeDetails zeroNode;
 vector <Communication_With_Threads> commWithThreadsDetails;
 mutex CanChangeCommWithThreads;
+boost::asio::thread_pool ThreadPool(Number_Of_Threads);
 
 char getFromInt(int val)
 {
@@ -238,7 +239,7 @@ bool initValues(wstring username)
 		return false;
 
 	//initializes the values for the bootnode list
-	char tempIp[4] = { (char)77, (char)139, (char)1, (char)166 };
+	char tempIp[4] = { (char)77, (char)139, (char)1, (char)166 };//{ (char)127, (char)0, (char)0, (char)1 };//
 	//char tempID[32] = {};
 	char tempID[32];
 	if (Is_Bootnode)
@@ -252,12 +253,9 @@ bool initValues(wstring username)
 	occupyNewTree();
 	occupyNewTree();
 
-	//create the thread pool
-	boost::asio::thread_pool pool(Number_Of_Threads);
-
 	//monitor ping messages
-	post(pool, [] { MonitorAfterPing(); });
-	post(pool, [] { MonitorBeforePing(); });
+	post(ThreadPool, [] { MonitorAfterPing(); });
+	post(ThreadPool, [] { MonitorBeforePing(); });
 
 	//sends a message to the bootnode to get the node's ip and port outside the NAT
 	if (!Is_Bootnode)
@@ -273,7 +271,7 @@ bool initValues(wstring username)
 		{
 			//adds this user as a node known to the user
 			addNodeToTreeInd(&My_Details, 0);
-			post(pool, [] { discoverNodesInTheNetwork(); });
+			post(ThreadPool, [] { discoverNodesInTheNetwork(); });
 		}
 	}
 	else
@@ -287,7 +285,7 @@ bool initValues(wstring username)
 
 		//if the network is already online, discover other nodes
 		if (connectToBootnode(true))
-			post(pool, [] { discoverNodesInTheNetwork(); });
+			post(ThreadPool, [] { discoverNodesInTheNetwork(); });
 	}
 
 	cout << "my ip is: ";
@@ -306,8 +304,8 @@ bool initValues(wstring username)
 		int messageLength = receiveMessage(Buffer_For_Receiving_Messages);
 		if (messageLength != -1)
 			handleMessage(Buffer_For_Receiving_Messages, messageLength);
-		else
-			this_thread::sleep_for(sleepNoMessageWaiting);
+		//else
+		//	this_thread::sleep_for(sleepNoMessageWaiting);
 	}
 
 	return true;

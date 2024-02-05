@@ -78,3 +78,4 @@ unsigned long long getLastTime(NodeDetails* askAbout);
 void setTime(NodeDetails* setAbout, unsigned long long timeToSet);
 void setHasSentInd(NodeDetails* changeAbout, int ind);
 bool getHasSentInd(NodeDetails* askAbout, int ind);
+int getLastBucket();
