@@ -1,7 +1,12 @@
 #pragma once
 #include <random>
 #include <algorithm>
-#include <sodium.h>
+
+#ifndef SODIUM
+#define SODIUM
+#define SODIUM_STATIC
+#include "sodium.h"
+#endif
 
 using namespace std;
 
@@ -14,4 +19,4 @@ unsigned char* getPrivateKey();
 void setKey(unsigned char* pubKey, unsigned char* privKey);
 
 //from SHA256.cpp
-string SHA256(string);
+void SHA256(char* input, int inputLen, char* output);

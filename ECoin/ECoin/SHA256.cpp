@@ -6,21 +6,38 @@
 
 using namespace std;
 
-void padding(string& input)
+string paddingVal;
+pair <char*, int> hashTo;
+
+void padding(char* input, int inputLen)
 {
 	//add padding to the message to make it a multiple of 512 bits
-    uint64_t LengthBits = input.length() * 8;
-    input += static_cast<char>(0x80);
-    while (input.length() % 64 != 56)
-        input += static_cast<char>(0);
+    paddingVal = "";
+    uint64_t LengthBits = inputLen * 8;
+    paddingVal += (char)0x80;
+    while ((inputLen + paddingVal.length()) % 64 != 56)
+        paddingVal += (char)0;
     for (int a = 7; a >= 0; a--)
-        input += static_cast<char>((LengthBits >> a * 8) & 0xFF);
+        paddingVal += (char)((LengthBits >> a * 8) & 0xFF);
 }
 
-string SHA256(string input)
+
+char getPlace(int place)
 {
+    //return the value - check if it is the padding or not
+    if (place < hashTo.second)
+        return hashTo.first[place];
+    return paddingVal[place - hashTo.second];
+}
+
+void SHA256(char* input, int inputLen, char* output)
+{
+    //initialize variable
+    hashTo.first = input;
+    hashTo.second = inputLen;
+
     //adds padding for the input
-    padding(input);
+    padding(input, inputLen);
 
     //constants for the algorithm
     constexpr uint32_t k[64] = 
@@ -44,16 +61,27 @@ string SHA256(string input)
     uint32_t h7 = 0x5be0cd19;
 
     //process the input in blocks of 512 bits
-    for (size_t i = 0; i < input.length(); i += 64) 
+    for (size_t i = 0; i < inputLen; i += 64)
     {
         //break the block into 16 32-bit words
         uint32_t w[64];
         for (int j = 0; j < 16; ++j) 
         {
-            w[j] = (static_cast<uint8_t>(input[i + j * 4]) << 24) |
-                (static_cast<uint8_t>(input[i + j * 4 + 1]) << 16) |
-                (static_cast<uint8_t>(input[i + j * 4 + 2]) << 8) |
-                (static_cast<uint8_t>(input[i + j * 4 + 3]));
+            //check if the whole value is in the input
+            if (i + j * 4 + 3 < inputLen)
+            {
+                w[j] = (static_cast<uint8_t>(input[i + j * 4]) << 24) |
+                    (static_cast<uint8_t>(input[i + j * 4 + 1]) << 16) |
+                    (static_cast<uint8_t>(input[i + j * 4 + 2]) << 8) |
+                    (static_cast<uint8_t>(input[i + j * 4 + 3]));
+            }
+            else
+            {
+                w[j] = (static_cast<uint8_t>(getPlace(i + j * 4)) << 24) |
+                    (static_cast<uint8_t>(getPlace(i + j * 4 + 1)) << 16) |
+                    (static_cast<uint8_t>(getPlace(i + j * 4 + 2)) << 8) |
+                    (static_cast<uint8_t>(getPlace(i + j * 4 + 3)));
+            }
         }
 
         //extend the first 16 words into the remaining 48 places
@@ -107,14 +135,12 @@ string SHA256(string input)
     }
 
     //produce the final hash value
-    stringstream ss;
-    ss << hex << setw(8) << setfill('0') << h0
-        << hex << setw(8) << setfill('0') << h1
-        << hex << setw(8) << setfill('0') << h2
-        << hex << setw(8) << setfill('0') << h3
-        << hex << setw(8) << setfill('0') << h4
-        << hex << setw(8) << setfill('0') << h5
-        << hex << setw(8) << setfill('0') << h6
-        << hex << setw(8) << setfill('0') << h7;
-    return ss.str();
+    memcpy(output, &h0, sizeof(uint32_t));
+    memcpy(output + sizeof(uint32_t), &h1, sizeof(uint32_t));
+    memcpy(output + 2 * sizeof(uint32_t), &h2, sizeof(uint32_t));
+    memcpy(output + 3 * sizeof(uint32_t), &h3, sizeof(uint32_t));
+    memcpy(output + 4 * sizeof(uint32_t), &h4, sizeof(uint32_t));
+    memcpy(output + 5 * sizeof(uint32_t), &h5, sizeof(uint32_t));
+    memcpy(output + 6 * sizeof(uint32_t), &h6, sizeof(uint32_t));
+    memcpy(output + 7 * sizeof(uint32_t), &h7, sizeof(uint32_t));
 }

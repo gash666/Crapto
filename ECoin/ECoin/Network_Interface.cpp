@@ -164,14 +164,10 @@ bool sendMessage(char* message, int len, char* receivingIp, int receivingPort, b
     }
     else
     {
-        /////////////////////////////////////////////////////////////
-        cout << "Sent to " << tempIp << " " << unsigned short(receivingPort) << " " << bytesSent << " bytes: " << '\n';
-        cout << hex;
-        for (int a = 0; a < len; a++)
-            cout << hex << setw(2) << std::setfill('0') << static_cast<unsigned>(static_cast<unsigned char>(message[a])) << ' ';
-        cout << dec << '\n' << '\n';
+        if (len > 0)
+            cout << "Sent to " << tempIp << " " << unsigned short(receivingPort) << " " << bytesSent << " bytes. message of type: " << hex << setw(2) << std::setfill('0') << static_cast<unsigned>(static_cast<unsigned char>(message[0])) << '\n' << dec;
     }
-
+        
     //returns that the message was sent successfully
     return true;
 }
@@ -224,12 +220,8 @@ int receiveMessage(char* receiveBuffer)
         return -1;
     }
 
-    /////////////////////////////////////////////////////////
-    cout << "Received " << bytesReceived << " bytes: " << '\n';
-    cout << hex;
-    for (int a = 0; a < bytesReceived; a++)
-        cout << hex << setw(2) << std::setfill('0') << static_cast<unsigned>(static_cast<unsigned char>(receiveBuffer[a])) << ' ';
-    cout << dec << '\n' << '\n';
+    if (bytesReceived > 0)
+        cout << "Received " << bytesReceived << " bytes. message of type " << hex << setw(2) << std::setfill('0') << static_cast<unsigned>(static_cast<unsigned char>(receiveBuffer[0])) << dec << '\n';
 
     if (receiveBuffer[0] == 0)
     {

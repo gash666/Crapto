@@ -5,12 +5,14 @@
 #include <iomanip>
 #include <map>
 #include <mutex>
+#include "H_Variables.h"
 #include <windows.h>
 #include "H_Node_Supporter.h"
 #include "H_Constants.h"
 #include "H_Network_Interface.h"
 #include "H_Message_Structure.h"
-#include "H_Variables.h"
+#include "H_ECDSA.h"
+#include "H_Maintain_Blockchain.h"
 
 using namespace std;
 
@@ -49,7 +51,7 @@ void MonitorAfterPing()
                 return;
 
             //sleeps until the ping needs to be answered
-            long long temp = Get_Time();
+            unsigned long long temp = Get_Time();
             if (nodeNow.second > temp)
                 this_thread::sleep_for(chrono::milliseconds(nodeNow.second - temp));
 
@@ -133,7 +135,7 @@ void MonitorBeforePing()
                 return;
 
             //sleeps until the node needs to be pinged
-            long long temp = Get_Time();
+            unsigned long long temp = Get_Time();
             if (nodeNow.second > temp)
                 this_thread::sleep_for(chrono::milliseconds(nodeNow.second - temp));
 
@@ -195,7 +197,7 @@ bool connectToBootnode(bool isBootnode)
     return false;
 }
 
-void getClosest(char target[32], int triesImprove)
+void getClosest(char target[32], int triesImprove, NodeDetails* answer = NULL)
 {
     //finds the closest nodes to a certain id and adds them to the tree
     //initialize and find the closest to the id that the user knows about
@@ -265,10 +267,14 @@ void getClosest(char target[32], int triesImprove)
 
     //adds the closest nodes to the tree
     for (int a = 0; a < Bucket_Size; a++)
+    {
         if (closestNow[a].port == 0)
             break;
         else if (memcmp(&closestNow[a], &My_Details, sizeof(NodeDetails)) != 0)
             Update_Ping_Timer(&closestNow[a]);
+        if (answer != NULL and memcmp(&closestNow[a].nodeID, target, 32) == 0)
+            copy(&closestNow[a], (NodeDetails*)((char*)&closestNow[a] + sizeof(NodeDetails)), answer);
+    }
 
     //frees the tree so others could use it
     freeTree(indexForTree);
@@ -291,12 +297,126 @@ void discoverNodesInTheNetwork()
     //fills the bucket list with nodes from the network
     char targetForCloseTo[32];
     copy(My_Details.nodeID, My_Details.nodeID + 32, targetForCloseTo);
-    getClosest(targetForCloseTo, 4);
+    getClosest(targetForCloseTo, Tries_Close_This_Node);
     int temp = getLastBucket();
+
+    //asks about the closest for each bucket with nodes
     for (int a = temp; a >= 0; a--)
     {
-        targetForCloseTo[(256 - a) / 8] ^= char (1 << (7 - (256 - a) % 8));
-        getClosest(targetForCloseTo, 2);
-        targetForCloseTo[(256 - a) / 8] ^= char (1 << (7 - (256 - a) % 8));
+        targetForCloseTo[(255 - a) / 8] ^= char (1 << ((7 - (256 - a) % 8)));
+        post(ThreadPool, [targetForCloseTo] { getClosest((char*)targetForCloseTo, Tries_Close_Other_Node); });
+        targetForCloseTo[(255 - a) / 8] ^= char (1 << ((7 - (256 - a) % 8)));
     }
+}
+
+void spreadMessage(char* message, int messageSize)
+{
+    //sends a message to other nodes so it would get to everyone
+    //initialize variables
+    NodeDetails closestToUser[Bucket_Size];
+    for (int a = 0; a < Bucket_Size; a++)
+        closestToUser[a].port = 0;
+
+    //send the message to the closest nodes to this one
+    fillListInd(Bucket_Size, My_Details.nodeID, closestToUser, 0);
+    for (int a = 0; a < Bucket_Size; a++)
+    {
+        if (closestToUser[a].port == 0)
+            break;
+        sendMessage(message, messageSize, closestToUser[a].ip, closestToUser[a].port);
+    }
+
+    //send the message to one node from each bucket
+    sendMessageBuckets(message, messageSize);
+}
+
+void spreadRandomNumbers(unsigned long long timeStartRandom, unsigned long long timeEndRandom, char hashOfContract[32])
+{
+    //spreads random numbers until the end of the contract
+    //wait until the potential start of the contract
+    if (timeStartRandom > Get_Time())
+        this_thread::sleep_for(chrono::milliseconds(timeStartRandom - Get_Time()));
+
+    while (Get_Time() < timeEndRandom)
+    {
+        //wait until it is time to reveal the next random number
+        this_thread::sleep_for(chrono::milliseconds((Time_Block / 3) - Get_Time() % (Time_Block / 3)));
+
+        //create reveal message spread it and process it
+        Reveal_11* message = new Reveal_11{};
+        Handle_Reveal_Create(&revealNumbers[indexLastReveal][0], hashOfContract, message);
+        handleMessage((char*)message, sizeof(Reveal_11));
+        indexLastReveal--;
+
+        //wait until it is time to try to be the next block creator
+        this_thread::sleep_for(chrono::milliseconds(Time_Block - Get_Time() % Time_Block));
+        
+        //try to be the next block creator
+        tryCreateNextBlock();
+    }
+    this_thread::sleep_for(chrono::milliseconds(Max_Size_Block_Tree * Time_Block));
+    hasContract = false;
+}
+
+void handleStakingPoolOperator(unsigned long long timeEnd)
+{
+    //wait until the user is not a staking pool operator
+    while (Get_Time() < timeEnd)
+    {
+        //wait until it is time to try to be the next block creator
+        unsigned long long timeSleep = Get_Time() + Time_Block;
+        timeSleep -= timeSleep % Time_Block;
+        this_thread::sleep_for(chrono::milliseconds(timeSleep));
+
+        //try to be the next block creator
+        tryCreateNextBlock();
+    }
+    this_thread::sleep_for(chrono::milliseconds(Max_Size_Block_Tree * Time_Block));
+    hasContract = false;
+}
+
+pair <char*, int> messageNow;
+Answer_All_Info_15* m;
+char* copyHere;
+
+void initializeSendAllData(NodeDetails* whoAsked)
+{
+    //initializes the place to copy the data until it is sent
+    messageNow = Handle_Answer_All_Info_Create(whoAsked);
+    copyHere = messageNow.first + messageNow.second;
+    m = (Answer_All_Info_15*)messageNow.first;
+    m->howmanyEachType[0] = 0;
+    m->howmanyEachType[1] = 0;
+}
+
+void copyDataToMessage(char* copyFrom, int copyAmount, int indexAdd)
+{
+    //copies the data and updates variables
+    m->howmanyEachType[indexAdd]++;
+    copy(copyFrom, copyFrom + copyAmount, copyHere);
+    copyHere += copyAmount;
+    messageNow.second += copyAmount;
+
+    //check if the message is too long
+    if (messageNow.second + 150 > Maximum_Message_Size)
+    {
+        signMessage((const unsigned char*)messageNow.first, messageNow.second, (unsigned char*)copyHere);
+        sendMessage(messageNow.first, messageNow.second + 64, m->ReceiverDetails.ip, m->ReceiverDetails.port);
+
+        //initialize variables for the next message
+        m->howmanyEachType[0] = 0;
+        m->howmanyEachType[1] = 0;
+        messageNow.second = sizeof(Answer_All_Info_15);
+        copyHere = messageNow.first + messageNow.second;
+    }
+}
+
+void endSendAllData()
+{
+    //sends a message that ends 
+    Answer_All_Info_15* m = (Answer_All_Info_15*)messageNow.first;
+    m->isLast = true;
+    signMessage((const unsigned char*)messageNow.first, messageNow.second, (unsigned char*)copyHere);
+    sendMessage(messageNow.first, messageNow.second + 64, m->ReceiverDetails.ip, m->ReceiverDetails.port);
+    free(messageNow.first);
 }

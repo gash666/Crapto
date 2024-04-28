@@ -11,7 +11,7 @@ struct NodeDetails
 	char ip[4];
 	unsigned short port;
 
-	//operator for map
+	//operator for map and treap
 	bool operator<(const NodeDetails& other) const
 	{
 		return memcmp(nodeID, other.nodeID, sizeof(nodeID)) < 0;
@@ -26,6 +26,7 @@ struct Node
 	NodeDetails nodeInfo = { 0 };
 	Node* lp = NULL, * rp = NULL;
 	struct Tree* aboveAll;
+	unsigned long long amountOfMoney = 0;
 
 	Node(int lvl, char* val, Tree* head)
 	{
@@ -39,13 +40,16 @@ struct Node
 	void findClose(int howmany, char* val);
 	void addNodeRight();
 	void addNodeLeft();
-	void lowerLevels(NodeDetails* node1, NodeDetails* node2, bool firstSent);
+	void lowerLevels(NodeDetails* node1, NodeDetails* node2, bool firstSent, unsigned long long firstAmountOfMoney);
 	bool addNode(NodeDetails* val);
 	void raiseLevels();
 	bool deleteNode(char* val);
 	void changeAddress(NodeDetails* change);
+	unsigned long long getMoney(NodeDetails* askAbout);
+	void setMoney(NodeDetails* changeAbout, unsigned long long moneyAmount);
 	void changeSent(NodeDetails* changeAbout);
 	bool askSent(NodeDetails* askAbout);
+	void copyData();
 };
 
 struct Tree
@@ -57,12 +61,15 @@ struct Tree
 	Node* needUp;
 	NodeDetails goesUp;
 	bool goesUpHasSent;
+	unsigned long long goesUpAmountOfMoney;
 	int placeNow = 0;
 
 	void initTree(bool isNew);
 	bool addNodeToTree(NodeDetails* newNode);
 	void fillList(int howmany, char* val, NodeDetails* placeList);
 	void removeNodeFromTree(char* val);
+	unsigned long long getAmountOfMoney(NodeDetails* askAbout);
+	void setAmountOfMoney(NodeDetails* changeAbout, unsigned long long amount);
 	bool getHasSent(NodeDetails* askAbout);
 	void setHasSent(NodeDetails* changeAbout);
 };
@@ -76,6 +83,10 @@ void removeNodeFromTreeInd(char* val, int ind);
 int getTreeSizeInd(int ind);
 unsigned long long getLastTime(NodeDetails* askAbout);
 void setTime(NodeDetails* setAbout, unsigned long long timeToSet);
+unsigned long long getAmountOfMoneyInd(NodeDetails* askAbout, int ind);
+void setAmountMoneyInd(NodeDetails* changeAbout, unsigned long long AmountOfMoney, int ind);
 void setHasSentInd(NodeDetails* changeAbout, int ind);
 bool getHasSentInd(NodeDetails* askAbout, int ind);
 int getLastBucket();
+void sendMessageBuckets(char* message, int messageSize);
+void copyAllData(int ind);

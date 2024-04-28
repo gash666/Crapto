@@ -5,9 +5,11 @@
 #include <mutex>
 #include <boost/asio.hpp>
 #include <iomanip>
+#include "H_Variables.h"
+#include "H_Network_Interface.h"
 #include "H_Node_Supporter.h"
 #include "H_Constants.h"
-#include "H_Variables.h"
+#include "H_Network_Operations.h"
 
 using namespace std;
 
@@ -118,10 +120,10 @@ void Tree::fillList(int howmany, char* val, NodeDetails* placeList)
 void Tree::removeNodeFromTree(char* val)
 {
 	//remove node from the tree
-	needUp = NULL;
 	bool remove = headOfTree->deleteNode(val);
 	if (!remove)
 		cout << "no node was removed" << '\n';
+
 	if (remove)
 	{
 		//remove the node from the buckets list
@@ -150,10 +152,23 @@ void Tree::removeNodeFromTree(char* val)
 			needUp->rp = NULL;
 			needUp->nodeInfo = goesUp;
 			needUp->hasSent = goesUpHasSent;
+			needUp->amountOfMoney = goesUpAmountOfMoney;
 		}
 		else
 			cout << "error returned too big" << '\n';
 	}
+}
+
+unsigned long long Tree::getAmountOfMoney(NodeDetails* askAbout)
+{
+	//return the amount of money a node has
+	return headOfTree->getMoney(askAbout);
+}
+
+void Tree::setAmountOfMoney(NodeDetails* changeAbout, unsigned long long amount)
+{
+	//set or add to the amount of money a node has
+	headOfTree->setMoney(changeAbout, amount);
 }
 
 void Tree::setHasSent(NodeDetails* changeAbout)
@@ -247,7 +262,7 @@ void Node::changeAddress(NodeDetails* change)
 		lp->changeAddress(change);
 }
 
-void Node::lowerLevels(NodeDetails* node1, NodeDetails* node2, bool firstSent)
+void Node::lowerLevels(NodeDetails* node1, NodeDetails* node2, bool firstSent, unsigned long long firstAmountOfMoney)
 {
 	//add the two nodes in the right places
 	if (getbit(node1->nodeID, level) == getbit(node2->nodeID, level))
@@ -258,13 +273,13 @@ void Node::lowerLevels(NodeDetails* node1, NodeDetails* node2, bool firstSent)
 			//if both of them need right, go right
 			addNodeRight();
 			rp->tsize = 2;
-			rp->lowerLevels(node1, node2, firstSent);
+			rp->lowerLevels(node1, node2, firstSent, firstAmountOfMoney);
 			return;
 		}
 		//if both of them need left, go left
 		addNodeLeft();
 		lp->tsize = 2;
-		lp->lowerLevels(node1, node2, firstSent);
+		lp->lowerLevels(node1, node2, firstSent, firstAmountOfMoney);
 		return;
 	}
 	//their last bits are different, create places for both of them
@@ -276,6 +291,7 @@ void Node::lowerLevels(NodeDetails* node1, NodeDetails* node2, bool firstSent)
 		copy(node1, (NodeDetails*)((char*)node1 + sizeof(NodeDetails)), &lp->nodeInfo);
 		copy(node2, (NodeDetails*)((char*)node2 + sizeof(NodeDetails)), &rp->nodeInfo);
 		lp->hasSent = firstSent;
+		lp->amountOfMoney = firstAmountOfMoney;
 	}
 	else
 	{
@@ -283,6 +299,7 @@ void Node::lowerLevels(NodeDetails* node1, NodeDetails* node2, bool firstSent)
 		copy(node2, (NodeDetails*)((char*)node2 + sizeof(NodeDetails)), &lp->nodeInfo);
 		copy(node1, (NodeDetails*)((char*)node1 + sizeof(NodeDetails)), &rp->nodeInfo);
 		rp->hasSent = firstSent;
+		rp->amountOfMoney = firstAmountOfMoney;
 	}
 	//set their sizes
 	lp->tsize = 1;
@@ -301,6 +318,7 @@ bool Node::addNode(NodeDetails* val)
 			for (int a = 0; a < 32 and isTheFirst; a++)
 				if (nodeInfo.nodeID[a] != 0)
 					isTheFirst = false;
+
 			if (isTheFirst)
 			{
 				copy(val, (NodeDetails*)((char*)val + sizeof(NodeDetails)), &nodeInfo);
@@ -313,7 +331,7 @@ bool Node::addNode(NodeDetails* val)
 		if (memcmp(nodeInfo.nodeID, val->nodeID, 32) != 0)
 		{
 			//seperate the new and old values
-			lowerLevels(&nodeInfo, val, hasSent);
+			lowerLevels(&nodeInfo, val, hasSent, amountOfMoney);
 			nodeInfo = { 0 };
 			tsize++;
 			return true;
@@ -364,6 +382,7 @@ void Node::raiseLevels()
 		//if this is the one that needs to go up
 		aboveAll->goesUp = nodeInfo;
 		aboveAll->goesUpHasSent = hasSent;
+		aboveAll->goesUpAmountOfMoney = amountOfMoney;
 		return;
 	}
 	if (rp != NULL and rp->tsize != 0)
@@ -420,6 +439,58 @@ bool Node::deleteNode(char* val)
 	return remove;
 }
 
+unsigned long long Node::getMoney(NodeDetails* askAbout)
+{
+	//return the amount of money the user has
+	if (lp == NULL and rp == NULL)
+	{
+		//return the amount of money
+		if (memcmp(askAbout->nodeID, nodeInfo.nodeID, 32) == 0)
+			return amountOfMoney;
+		return 0;
+	}
+	if (!getbit(askAbout->nodeID, level))
+	{
+		//go left towards the node
+		if (lp == NULL)
+			return 0;
+		return lp->getMoney(askAbout);
+	}
+	else
+	{
+		//go right towards the node
+		if (rp == NULL)
+			return 0;
+		return rp->getMoney(askAbout);
+	}
+}
+
+void Node::setMoney(NodeDetails* changeAbout, unsigned long long moneyAmount)
+{
+	//change the amount of money the user has
+	if (lp == NULL and rp == NULL)
+	{
+		//set the amount of money
+		if (memcmp(changeAbout->nodeID, nodeInfo.nodeID, 32) == 0)
+			amountOfMoney = moneyAmount;
+		return;
+	}
+	if (!getbit(changeAbout->nodeID, level))
+	{
+		//go left towards the node
+		if (lp == NULL)
+			return;
+		lp->setMoney(changeAbout, moneyAmount);
+	}
+	else
+	{
+		//go right towards the node
+		if (rp == NULL)
+			return;
+		rp->setMoney(changeAbout, moneyAmount);
+	}
+}
+
 void Node::changeSent(NodeDetails* changeAbout)
 {
 	//change that the node has sent a message
@@ -428,6 +499,7 @@ void Node::changeSent(NodeDetails* changeAbout)
 		//set that the user has sent a message
 		if (memcmp(changeAbout->nodeID, nodeInfo.nodeID, 32) == 0)
 			hasSent = true;
+		return;
 	}
 	if (!getbit(changeAbout->nodeID, level))
 	{
@@ -471,33 +543,64 @@ bool Node::askSent(NodeDetails* askAbout)
 	}
 }
 
+void Node::copyData()
+{
+	//copy the data
+	//copy the data into an array
+	if (lp == NULL and rp == NULL)
+	{
+		cout << "the money here is: " << amountOfMoney << '\n';
+		char dataToCopy[sizeof(NodeDetails) + sizeof(unsigned long long)];
+		copy(&nodeInfo, (NodeDetails*)((char*)&nodeInfo + sizeof(NodeDetails)), (NodeDetails*)dataToCopy);
+		copy(&amountOfMoney, (unsigned long long*)((char*)&amountOfMoney + sizeof(unsigned long long)), (unsigned long long*)(dataToCopy + sizeof(NodeDetails)));
+
+		//copy the data to the rest of the message
+		copyDataToMessage(dataToCopy, sizeof(NodeDetails) + sizeof(unsigned long long), 0);
+	}
+
+	//get the answer from the lower layers
+	if (lp != NULL)
+		lp->copyData();
+
+	if (rp != NULL)
+		rp->copyData();
+}
+
 vector <bool> exists;
 vector <Tree*> trees;
-vector <mutex*> mutexVector;
+vector <mutex*> mutexVectorNodeSupporter;
 mutex canChange;
 
 int occupyNewTree()
 {
 	//adds a new tree to the vector
 	lock_guard <mutex> lock(canChange);
+
+	//check if there is an empty tree
 	int ind = -1;
 	for (int a = 0; a < exists.size(); a++)
 		if (exists[a])
 			ind = a;
+
+	//if there is no empty tree, create one
 	bool isNewTree = false;
 	if (ind == -1)
 	{
 		ind = (int) trees.size();
 		mutex* newMutex = new mutex();
-		mutexVector.push_back(newMutex);
+		mutexVectorNodeSupporter.push_back(newMutex);
 		exists.push_back(false);
 		trees.push_back(new Tree);
 		isNewTree = true;
 	}
-	lock_guard <mutex> lock2(*mutexVector[ind]);
+
+	//initialize the new tree if needed
+	lock_guard <mutex> lock2(*mutexVectorNodeSupporter[ind]);
 	if (ind == 0)
 		trees[ind]->checkBucket = true;
 	trees[ind]->initTree(isNewTree);
+
+	//return the index of the tree found / created
 	return ind;
 }
 
@@ -505,42 +608,44 @@ void freeTree(int ind)
 {
 	//frees the tree so others can use it
 	lock_guard <mutex> lock(canChange);
-	lock_guard <mutex> lock2(*mutexVector[ind]);
+	lock_guard <mutex> lock2(*mutexVectorNodeSupporter[ind]);
 	exists[ind] = true;
 }
 
 void fillListInd(int howmany, char* val, NodeDetails* placeList, int ind)
 {
 	//wrapper function for findClose, allows it to change the place to put the nodes
-	lock_guard <mutex> lock(*mutexVector[ind]);
+	lock_guard <mutex> lock(*mutexVectorNodeSupporter[ind]);
 	trees[ind]->fillList(howmany, val, placeList);
 }
 
 bool addNodeToTreeInd(NodeDetails* newNode, int ind)
 {
 	//adds a new node to the tree
-	lock_guard <mutex> lock(*mutexVector[ind]);
-	return trees[ind]->addNodeToTree(newNode);
+	lock_guard <mutex> lock(*mutexVectorNodeSupporter[ind]);
+	//return trees[ind]->addNodeToTree(newNode);
+	bool temp = trees[ind]->addNodeToTree(newNode);
+	return temp;
 }
 
 void removeNodeFromTreeInd(char* val, int ind)
 {
 	//removes a node from the tree
-	lock_guard <mutex> lock(*mutexVector[ind]);
+	lock_guard <mutex> lock(*mutexVectorNodeSupporter[ind]);
 	trees[ind]->removeNodeFromTree(val);
 }
 
 int getTreeSizeInd(int ind)
 {
 	//returns the size of the tree
-	lock_guard <mutex> lock(*mutexVector[ind]);
+	lock_guard <mutex> lock(*mutexVectorNodeSupporter[ind]);
 	return trees[ind]->headOfTree->tsize;
 }
 
 void setTime(NodeDetails* setAbout, unsigned long long timeToSet)
 {
 	//sets the last time a node sent a message
-	lock_guard <mutex> lock(*mutexVector[0]);
+	lock_guard <mutex> lock(*mutexVectorNodeSupporter[0]);
 	pair <int, int> ind = getIndex(setAbout->nodeID);
 	if (ind.second == -1)
 		return;
@@ -550,24 +655,36 @@ void setTime(NodeDetails* setAbout, unsigned long long timeToSet)
 unsigned long long getLastTime(NodeDetails* askAbout)
 {
 	//returns the last time a node sent a message
-	lock_guard <mutex> lock(*mutexVector[0]);
+	lock_guard <mutex> lock(*mutexVectorNodeSupporter[0]);
 	pair <int, int> ind = getIndex(askAbout->nodeID);
 	if (ind.second == -1)
 		return -1;
 	return buckets[ind.first][ind.second].second;
 }
 
+unsigned long long getAmountOfMoneyInd(NodeDetails* askAbout, int ind)
+{
+	//return the amount of money a node has
+	return trees[ind]->getAmountOfMoney(askAbout);
+}
+
+void setAmountMoneyInd(NodeDetails* changeAbout, unsigned long long AmountOfMoney, int ind)
+{
+	//set or add to the amount of money the node has
+	trees[ind]->setAmountOfMoney(changeAbout, AmountOfMoney);
+}
+
 void setHasSentInd(NodeDetails* changeAbout, int ind)
 {
 	//sets that the user already sent a message with what he knows
-	lock_guard <mutex> lock(*mutexVector[ind]);
+	lock_guard <mutex> lock(*mutexVectorNodeSupporter[ind]);
 	trees[ind]->setHasSent(changeAbout);
 }
 
 bool getHasSentInd(NodeDetails* askAbout, int ind)
 {
 	//returns whether the user already sent a message
-	lock_guard <mutex> lock(*mutexVector[ind]);
+	lock_guard <mutex> lock(*mutexVectorNodeSupporter[ind]);
 	return trees[ind]->getHasSent(askAbout);
 }
 
@@ -578,4 +695,24 @@ int getLastBucket()
 		if (!buckets[a].empty())
 			return a;
 	return 0;
+}
+
+void sendMessageBuckets(char* message, int messageSize)
+{
+	//sends a message to a random node from each bucket
+	lock_guard <mutex> lock(*mutexVectorNodeSupporter[0]);
+
+	for (int a = 0; a < 256; a++)
+		if (!buckets[a].empty())
+		{
+			//if the bucket is not empty, send a message to a random node
+			int t = rand() % buckets[a].size();
+			sendMessage(message, messageSize, buckets[a][t].first.ip, buckets[a][t].first.port);
+		}
+}
+
+void copyAllData(int ind)
+{
+	lock_guard <mutex> lock(*mutexVectorNodeSupporter[ind]);
+	trees[ind]->headOfTree->copyData();
 }

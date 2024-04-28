@@ -6,15 +6,27 @@
 #include "H_Node_Supporter.h"
 #include "H_Message_Structure.h"
 #include "H_ECDSA.h"
+#include "H_Treap.h"
+#include "H_General_Functions.h"
+#include "H_Block_Tree.h"
+#include "H_Maintain_Blockchain.h"
+
+#ifndef SODIUM
+#define SODIUM
+#define SODIUM_STATIC
+#include "sodium.h"
+#endif
+
 #include <iostream>
 #include <Windows.h>
 #include <iomanip>
 
+//initialize global variables
 NodeDetails My_Details;
 char My_Private_Key[64];
 long long Number_Now;
 bool Is_Bootnode = false;
-double Number_Coins;
+unsigned long long Number_Coins;
 char Buffer_For_Receiving_Messages[Maximum_Message_Size];
 wstring Database_Path;
 NodeDetails Bootnode_Details[Number_Of_Bootnodes];
@@ -22,6 +34,24 @@ NodeDetails zeroNode;
 vector <Communication_With_Threads> commWithThreadsDetails;
 mutex CanChangeCommWithThreads;
 boost::asio::thread_pool ThreadPool(Number_Of_Threads);
+bool Is_Staking_Pool_Operator = false;
+bool hasContract = false;
+bool isCreatingRandom;
+vector <array <char, 32>> revealNumbers;
+int indexLastReveal;
+unsigned long long Block_Number;
+NodeDetails Next_Block_Creator;
+char hashBlockCreating[32];
+bool isThisUserCreating;
+vector <pair <NodeDetails, array<char, 64>>> Signatures_For_Confirm_Message;
+deque <pair <NodeDetails, unsigned long long>> May_Need_Information;
+char ShaOfHeadBlockInitializing[32];
+unsigned long long lastTimeReceivedRandom = 0;
+bool isFirstRandomReceived = false;
+mutex canUseBlockTreeActions;
+bool isFirstAll = false;
+bool hasInfo = false;
+unsigned long long blockNumberApproved;
 
 char getFromInt(int val)
 {
@@ -53,9 +83,9 @@ bool loadIntoFile()
 	dataToWrite[193] = '\n';
 
 	//convert the amount of money into char array
-	char tempNumberCoins[sizeof(double)];
-	memcpy(tempNumberCoins, &Number_Coins, sizeof(double));
-	turnToASCII(&(dataToWrite[194]), tempNumberCoins, sizeof(double));
+	char tempNumberCoins[sizeof(unsigned long long)];
+	memcpy(tempNumberCoins, &Number_Coins, sizeof(unsigned long long));
+	turnToASCII(&(dataToWrite[194]), tempNumberCoins, sizeof(unsigned long long));
 
 	//creates a handle for writing into the database file
 	HANDLE fileHandle = CreateFile(
@@ -205,14 +235,14 @@ bool loadFromFile(wstring username)
 		turnToChar(My_Private_Key, filedata, 64);
 		turnToChar(My_Details.nodeID, filedata + 128 + 1, 32);
 
-		char tempNumberCoins[sizeof(double)];
-		turnToChar(tempNumberCoins, filedata + 128 + 64 + 2, sizeof(double));
+		char tempNumberCoins[sizeof(unsigned long long)];
+		turnToChar(tempNumberCoins, filedata + 128 + 64 + 2, sizeof(unsigned long long));
 
 		//convert the char array into double
-		memcpy(&Number_Coins, tempNumberCoins, sizeof(double));
+		memcpy(&Number_Coins, tempNumberCoins, sizeof(unsigned long long));
 
 		//sets the public and private keys as the ones read from the file
-		setKey((unsigned char*) My_Details.nodeID, (unsigned char*) My_Private_Key);
+		setKey((unsigned char*)My_Details.nodeID, (unsigned char*)My_Private_Key);
 
 		//close the handle
 		CloseHandle(readFile);
@@ -234,14 +264,24 @@ bool loadFromFile(wstring username)
 
 bool initValues(wstring username)
 {
+	//initialize libsodium
+	if (sodium_init() < 0)
+	{
+		cout << "error initializing libsodium" << '\n';
+		return false;
+	}
+
+	//initialize the variable that saves the head of the head of the block tree
+	for (int a = 0; a < 32; a++)
+		ShaOfHeadBlockInitializing[a] = 0;
+
 	//initializes the keys and how much money the user has
 	if (!loadFromFile(username))
 		return false;
 
 	//initializes the values for the bootnode list
-	char tempIp[4] = { (char)77, (char)139, (char)1, (char)166 };//{ (char)127, (char)0, (char)0, (char)1 };//
-	//char tempID[32] = {};
-	char tempID[32];
+	char tempIp[4] = { (char)127, (char)0, (char)0, (char)1 };//{ (char)77, (char)139, (char)1, (char)166 };//
+	char tempID[32] = {};
 	if (Is_Bootnode)
 		for (int a = 0; a < 32; a++)
 			tempID[a] = My_Details.nodeID[a];
@@ -253,9 +293,30 @@ bool initValues(wstring username)
 	occupyNewTree();
 	occupyNewTree();
 
+	//structures that save which messages were already received and helps filling blocks with actions
+	addNewMapQueue({ Time_Message_Valid, Max_Time_Spread }, sizeof(Pay_6));
+	addNewMapQueue({ Time_Message_Valid, Max_Time_Spread }, 32);
+	addNewMapQueue({ Time_Message_Valid, Max_Time_Spread }, sizeof(Bind_Random_Staking_Pool_Operator_9));
+	addNewMapQueue({ Time_Message_Valid, Max_Time_Spread }, sizeof(Bind_Staking_Pool_Operator_10));
+	addNewMapQueue({ Time_Message_Valid, Max_Time_Spread }, sizeof(Reveal_11));
+	addNewMapQueue({ Time_Message_Valid, Max_Time_Spread }, 32);
+	addNewMapQueue({ Time_Message_Valid, Max_Time_Spread }, 32);
+
+	//structures that maintain lists approved by the blockchain protocol with all the data
+	addNewMapQueue({ Infinite_Time, 0 }, sizeof(Bind_Staking_Pool_Operator_10));//staking pool operators
+	addNewMapQueue({ Infinite_Time, 0 }, sizeof(Bind_Random_Staking_Pool_Operator_9));//random staking pool operators
+
+	//adds a treap of the staking pool operators
+	initTreap();//staking pool operators
+	initTreap();//random taking pool operators
+	initTreap();//
+	initTreap();//
+	initTreap();//
+	initTreap();//
+
 	//monitor ping messages
-	post(ThreadPool, [] { MonitorAfterPing(); });
-	post(ThreadPool, [] { MonitorBeforePing(); });
+	post(ThreadPool, []() { MonitorAfterPing(); });
+	post(ThreadPool, []() { MonitorBeforePing(); });
 
 	//sends a message to the bootnode to get the node's ip and port outside the NAT
 	if (!Is_Bootnode)
@@ -271,7 +332,7 @@ bool initValues(wstring username)
 		{
 			//adds this user as a node known to the user
 			addNodeToTreeInd(&My_Details, 0);
-			post(ThreadPool, [] { discoverNodesInTheNetwork(); });
+			post(ThreadPool, []() { discoverNodesInTheNetwork(); });
 		}
 	}
 	else
@@ -282,10 +343,29 @@ bool initValues(wstring username)
 
 		//adds this user as a node known to the user
 		addNodeToTreeInd(&My_Details, 0);
+		addNodeToTreeInd(&My_Details, 1);
 
 		//if the network is already online, discover other nodes
 		if (connectToBootnode(true))
-			post(ThreadPool, [] { discoverNodesInTheNetwork(); });
+			post(ThreadPool, []() { discoverNodesInTheNetwork(); });
+
+		if (getTreeSizeInd(0) == 1)
+		{
+			//create the first block
+			//wait until the correct time
+			this_thread::sleep_for(chrono::milliseconds(Time_Block - Get_Time() % Time_Block));
+
+			//set the correct amount of money for the bootnode
+			setAmountMoneyInd(&My_Details, (unsigned long long)Bootnode_Start_Money - Number_Coins_Per_Block, 1);
+
+			//make the bootnode into a random staking pool operator
+			isCreatingRandom = true;
+			hasInfo = true;
+			hasContract = true;
+			Is_Staking_Pool_Operator = true;
+			sendMessageStakingPoolOperator(true);
+			isFirstAll = true;
+		}
 	}
 
 	cout << "my ip is: ";
@@ -296,17 +376,6 @@ bool initValues(wstring username)
 			cout << ".";
 	}
 	cout << '\n' << "my port is: " << getPort() << '\n';
-
-	chrono::milliseconds sleepNoMessageWaiting(100);
-
-	while (true)
-	{
-		int messageLength = receiveMessage(Buffer_For_Receiving_Messages);
-		if (messageLength != -1)
-			handleMessage(Buffer_For_Receiving_Messages, messageLength);
-		//else
-		//	this_thread::sleep_for(sleepNoMessageWaiting);
-	}
 
 	return true;
 }

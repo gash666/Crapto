@@ -102,7 +102,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;_WIN32_WINNT=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>C:\Users\gavsh\OneDrive\מסמכים\Libs\libsodium\include;C:\Users\gavsh\OneDrive\מסמכים\Libs\boost_1_83_0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
@@ -133,25 +133,33 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Block_Tree.cpp" />
     <ClCompile Include="Build_Message.cpp" />
     <ClCompile Include="ECDSA.cpp" />
     <ClCompile Include="Initialize.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Maintain_Blockchain.cpp" />
     <ClCompile Include="Network_Interface.cpp" />
     <ClCompile Include="Network_Operations.cpp" />
     <ClCompile Include="Node_Supporter.cpp" />
     <ClCompile Include="Process_Message.cpp" />
+    <ClCompile Include="Recent_Messages.cpp" />
     <ClCompile Include="SHA256.cpp" />
+    <ClCompile Include="Treap.cpp" />
+    <ClCompile Include="User_Actions.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="H_Block_Tree.h" />
     <ClInclude Include="H_Bootnode.h" />
     <ClInclude Include="H_Constants.h" />
     <ClInclude Include="H_ECDSA.h" />
-    <ClInclude Include="H_Init_Functions.h" />
+    <ClInclude Include="H_General_Functions.h" />
+    <ClInclude Include="H_Maintain_Blockchain.h" />
     <ClInclude Include="H_Message_Structure.h" />
     <ClInclude Include="H_Network_Interface.h" />
     <ClInclude Include="H_Network_Operations.h" />
     <ClInclude Include="H_Node_Supporter.h" />
+    <ClInclude Include="H_Treap.h" />
     <ClInclude Include="H_Variables.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
