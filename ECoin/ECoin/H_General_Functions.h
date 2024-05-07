@@ -5,6 +5,7 @@
 using namespace std;
 
 bool initValues(wstring username);
+bool loadIntoFile();
 unsigned long long Get_Time();
 void fillRandom(unsigned char* randomValue, int numberBytes);
 void turnToChar(char* place, char* value, int size);

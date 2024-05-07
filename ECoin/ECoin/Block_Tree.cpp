@@ -1,6 +1,9 @@
+#include "H_Variables.h"
+#include "H_Treap.h"
 #include "H_Block_Tree.h"
 #include "H_Network_Interface.h"
 #include "H_General_Functions.h"
+#include "H_Maintain_Blockchain.h"
 #include <iomanip>
 
 using namespace std;
@@ -51,7 +54,7 @@ BlockTreeNode* deepest;
 int depthDeepest;
 int depthSecondDeepest;
 
-void dfsDeepest(BlockTreeNode* blockNow, int depthNow)
+void dfsDeepest(BlockTreeNode* blockNow, int depthNow, BlockTreeNode* blockNotPass = NULL)
 {
 	//returns the deepest block that is confirmed by this user
 	//initialize variable
@@ -65,10 +68,10 @@ void dfsDeepest(BlockTreeNode* blockNow, int depthNow)
 			blockNow->blocksAfterThis[a]->isAprovedByThisUser = false;
 
 		//check if the block is approved
-		if (blockNow->blocksAfterThis[a]->isAprovedByThisUser)
+		if (blockNow->blocksAfterThis[a]->isAprovedByThisUser and blockNow->blocksAfterThis[a] != blockNotPass)
 		{
 			validChildren = true;
-			dfsDeepest(blockNow->blocksAfterThis[a], depthNow + 1);
+			dfsDeepest(blockNow->blocksAfterThis[a], depthNow + 1, blockNotPass);
 		}
 	}
 
@@ -100,7 +103,7 @@ void dfsSetTimeValid(BlockTreeNode* blockNow, unsigned long long timeSet, unsign
 {
 	//sets the time the blocks proposed in certain times are valid for
 	//set the time for this block
-	if (((Block_7*)blockNow->startOfBlock)->TimeAtCreation == timeSet)
+	if (((Block*)blockNow->startOfBlock)->TimeAtCreation == timeSet)
 		blockNow->timeUntilApproved = timeNow + (timeNow - blockNow->timeBlockArrived) * Factor_Time_Approved_Until;
 
 	//do this for all of this subtree
@@ -148,7 +151,7 @@ pair <char*, int> getPathToNode(char* shaOfBlock)
 void addBlock(char* shaOfParent, char* shaOfBlock, char* blockStart, int blockSize, bool isGood)
 {
 	//adds a block to the tree
-	BlockTreeNode* pointerToBlockNodeParent = dfsSearch(headNow, shaOfParent);;
+	BlockTreeNode* pointerToBlockNodeParent = dfsSearch(headNow, shaOfParent);
 
 	//check if the added block is not the first
 	if (headNow != NULL and pointerToBlockNodeParent == NULL)
@@ -180,7 +183,7 @@ pair <char*, int> getBlock(char* shaOfBlock)
 	return { answer->startOfBlock, answer->sizeOfBlock };
 }
 
-bool shouldSignBlock(char* shaOfBlock)
+void shouldSignBlock(char* shaOfBlock)
 {
 	//returns whether the asked block should be signed by this user
 	//get the deepest block
@@ -189,15 +192,48 @@ bool shouldSignBlock(char* shaOfBlock)
 	depthDeepest = 0;
 	dfsDeepest(headNow, 0);
 
-	//check if there is a deepest block
-	if (depthDeepest <= depthSecondDeepest + Number_Deepest_Approve)
-		return false;
+	//check if there is a block that could be confirmed
+	BlockTreeNode* maybeApprove = deepest;
+	for (int a = 0; a < Number_Deepest_Approve and maybeApprove != NULL; a++)
+		maybeApprove = maybeApprove->parentBlock;
 
-	//check if the proposed block is the deepest
-	if (deepest != NULL and memcmp(deepest->sha256OfBlock, shaOfBlock, 32) != 0)
-		return false;
+	if (maybeApprove == NULL)
+		return;
 
-	return true;
+	//check if the new block to be confirmed will be unique
+	if (depthSecondDeepest == depthDeepest or memcmp(shaOfBlock, deepest->sha256OfBlock, 32) != 0)
+		return;
+
+	//save the depth of the suggested block to be confirmed
+	int depthTemp = depthDeepest - Number_Deepest_Approve;
+	
+	//get the deepest node without the block that will maybe be confirmed
+	deepest = NULL;
+	depthSecondDeepest = 0;
+	depthDeepest = 0;
+	dfsDeepest(headNow, 0, maybeApprove);
+
+	if (depthDeepest <= depthTemp)
+	{
+		//check if this user is the creator of the block that is being approved
+		if (memcmp(&My_Details, &((Block*)maybeApprove->startOfBlock)->BlockCreator, sizeof(NodeDetails)) == 0)
+		{
+			//set the sha256 of the block
+			copy(maybeApprove->sha256OfBlock, maybeApprove->sha256OfBlock + 32, hashBlockCreating);
+
+			//initialize variables
+			deleteTreapAll(5);
+			isThisUserCreating = true;
+
+			//call the function that tries to collect signatures to approve the blocks
+			post(ThreadPool, []() { tryApproveBlock(); });
+		}
+
+		//sends a message that approves the block
+		Confirm_Block* ans = new Confirm_Block{};
+		Handle_Confirm_Block_Create(maybeApprove->sha256OfBlock, ans);
+		sendMessage((char*)ans, sizeof(Confirm_Block), ((Block*)maybeApprove->startOfBlock)->BlockCreator.ip, ((Block*)maybeApprove->startOfBlock)->BlockCreator.port);
+	}
 }
 
 BlockTreeNode* createOnThisBlock()

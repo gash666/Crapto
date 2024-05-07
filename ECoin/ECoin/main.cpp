@@ -31,7 +31,8 @@ void runAllTheTime()
 int main()
 {
     //second to show
-    /*srand((unsigned int)time(NULL));
+    /*
+    srand((unsigned int)time(NULL));
     initTreap();
     deque <pair <NodeDetails, unsigned long long>> inTheTree;
     for (int a = 0; a < 300; a++)
@@ -60,7 +61,6 @@ int main()
         int randomNum = rand() % inTheTree.size();
         if (inTheTree[randomNum].second != askNumberOfCoins(&inTheTree[randomNum].first, 0))
         {
-            cout << "fuck its wrong" << '\n';
             cout << counti << '\n';
             cout << inTheTree[randomNum].second << " " << askNumberOfCoins(&inTheTree[randomNum].first, 0) << '\n';
             return 0;
@@ -70,15 +70,14 @@ int main()
             cout << counti << '\n';
         counti += 4;
     }//*/
+    //*
     //first to show
     srand((unsigned int) time(NULL));
-    int n;
-    cin >> n;
     Is_Bootnode = false;
-    if (n == 1)
-        Is_Bootnode = true;
     wstring username;
     wcin >> username;
+    if (username == L"bootnode")
+        Is_Bootnode = true;
     if (!initValues(username))
         cout << "init went wrong" << '\n';
     else if (isFirstAll)
@@ -92,11 +91,7 @@ int main()
         //create the block
         char hashAllZero[32]{ 0 };
 
-        pair <char*, int> temp = Handle_Block_Create(hashAllZero, 10000);
-
-        for (int a = 0; a < temp.second; a++)
-            cout << hex << setw(2) << std::setfill('0') << static_cast<unsigned>(static_cast<unsigned char>(temp.first[a])) << ' ';
-        cout << dec << '\n' << '\n';
+        pair <char*, int> temp = Handle_Block_Create(hashAllZero, 100000);
 
         //calculate the hash of the new block
         char blockHash[32];

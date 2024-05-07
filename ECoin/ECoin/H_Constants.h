@@ -11,13 +11,19 @@
 #define Tries_Close_Other_Node 2
 
 //minimum message size
-#define Minimum_Message_Size sizeof(Connect_0)
+#define Minimum_Message_Size sizeof(Connect)
 
 //bucket size for kademlia
 #define Bucket_Size 5
 
 //exit code for functions run on other threads
 #define Need_Exit 0
+
+//time for the bot to sleep between each payment
+#define time_To_Sleep_Bot 8000
+
+//maximum amount for the bot to pay
+#define Maximum_Bot_Payment 100
 
 //time in milliseconds that passes from the last message from a user until you ping him
 #define Time_To_Ping 60000
@@ -86,7 +92,7 @@
 #define Start_Queue_Map_Blockchain 8
 
 //maximum message size
-#define Maximum_Message_Size sizeof(Block_7) + Max_Number_Payments_Block * sizeof(Transaction) + Max_Number_Bind_Staking_Pool_Operator_Block * sizeof(Contract) + Max_Number_Bind_Random_Staking_Pool_Operator_Block * sizeof(Contract_Random) + 256 * sizeof(Random_Reveal) + 64
+#define Maximum_Message_Size sizeof(Block) + Max_Number_Payments_Block * sizeof(Transaction) + Max_Number_Bind_Staking_Pool_Operator_Block * sizeof(Contract) + Max_Number_Bind_Random_Staking_Pool_Operator_Block * sizeof(Contract_Random) + 256 * sizeof(Random_Reveal) + 64
 
 //punishment for not revealing random numbers
 #define Punishment_Not_Reveal 20 * unsigned long long(Number_Coins_Per_Block)

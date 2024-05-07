@@ -56,14 +56,14 @@ void paySomeone()
 	}
 	
 	//create the message that pays the user
-	Pay_6* message = new Pay_6{};
+	Pay* message = new Pay{};
 	Handle_Pay_Create(&(receiver[0]), amountToPayUser, message);
 
 	//send the transaction to the payment receiver
-	sendMessage((char*) message, sizeof(Pay_6), receiver[0].ip, receiver[0].port);
+	sendMessage((char*) message, sizeof(Pay), receiver[0].ip, receiver[0].port);
 
 	//spread the message to other nodes
-	handleMessage((char*)message, sizeof(Pay_6));
+	handleMessage((char*)message, sizeof(Pay));
 }
 
 void printId()
@@ -143,20 +143,20 @@ void sendMessageStakingPoolOperator(bool isToNow)
 		indexLastReveal = (int)revealNumbers.size() - 2;
 
 		//create and spread the message
-		Bind_Random_Staking_Pool_Operator_9* message = new Bind_Random_Staking_Pool_Operator_9{};
+		Bind_Random_Staking_Pool_Operator* message = new Bind_Random_Staking_Pool_Operator{};
 		Handle_Bind_Random_Staking_Pool_Operator_Create(&revealNumbers.back()[0], timeStart, timeEnd, message);
-		handleMessage((char*)message, sizeof(Bind_Random_Staking_Pool_Operator_9));
+		handleMessage((char*)message, sizeof(Bind_Random_Staking_Pool_Operator));
 		char hashContract[32];
-		SHA256((char*) message, sizeof(Bind_Random_Staking_Pool_Operator_9), hashContract);
+		SHA256((char*) message, sizeof(Bind_Random_Staking_Pool_Operator), hashContract);
 		post(ThreadPool, [timeStart, timeEnd, hashContract]() { spreadRandomNumbers(timeStart, timeEnd, (char*)hashContract); });
 	}
 	else
 	{
 		//the user doesn't want to be a part of the creation of the random numbers
-		Bind_Staking_Pool_Operator_10* message = new Bind_Staking_Pool_Operator_10{};
+		Bind_Staking_Pool_Operator* message = new Bind_Staking_Pool_Operator{};
 		Handle_Bind_Staking_Pool_Operator_Create(timeStart, timeEnd, message);
-		handleMessage((char*)message, sizeof(Bind_Staking_Pool_Operator_10));
-		post(ThreadPool, [timeEnd]() { handleStakingPoolOperator(timeEnd); });
+		handleMessage((char*)message, sizeof(Bind_Staking_Pool_Operator));
+		post(ThreadPool, [timeStart, timeEnd]() { handleStakingPoolOperator(timeStart, timeEnd); });
 	}
 }
 
@@ -165,12 +165,14 @@ void askInformation(bool isAll)
 	//sends a message asking for all the information about the blockchain
 	//delete the known data in the treap of staking pool operators
 	deleteTreapAll(0);
+	deleteTreapAll(2);
+	deleteTreapAll(4);
 
 	//create and send a message asking for information
-	Ask_All_Info_14* message = new Ask_All_Info_14{};
+	Ask_All_Info* message = new Ask_All_Info{};
 	Handle_Ask_All_Info_Create(message, isAll);
 	int randomNumber = rand() % Number_Of_Bootnodes;
-	sendMessage((char*)message, sizeof(Ask_All_Info_14), Bootnode_Details[randomNumber].ip, Bootnode_Details[randomNumber].port);
+	sendMessage((char*)message, sizeof(Ask_All_Info), Bootnode_Details[randomNumber].ip, Bootnode_Details[randomNumber].port);
 }
 
 void openStakingPool(bool isRandom)
@@ -202,6 +204,67 @@ void openStakingPool(bool isRandom)
 	askInformation(true);
 }
 
+void printDataStakingPoolOperators()
+{
+	//makes sure the details will not change during the printing
+	lock_guard <mutex> lock(canUseBlockTreeActions);
+
+	//prints the answer
+	cout << "There are currently " << getSizeTreapInd(0) << " staking pool operators" << '\n';
+	printDataTreap();
+}
+
+bool shouldBotRun;
+
+void payRandom()
+{
+	//pays random users each time
+	shouldBotRun = true;
+	while (shouldBotRun)
+	{
+		//get the details of a random user
+		this_thread::sleep_for(chrono::milliseconds(time_To_Sleep_Bot));
+		char randomId[32];
+		fillRandom((unsigned char*)randomId, 32);
+		NodeDetails payTo;
+		getClosest(randomId, 1, &payTo);
+
+		//decide of a random amount of money to pay
+		unsigned long long randomAmountPay = rand() % min(Number_Coins, (unsigned long long)Maximum_Bot_Payment) + 1;
+
+		//pay this user a random small amount of money
+		Pay* message = new Pay{};
+		Handle_Pay_Create(&payTo, randomAmountPay, message);
+
+		//send the transaction to the payment receiver
+		sendMessage((char*)message, sizeof(Pay), payTo.ip, payTo.port);
+
+		//spread the message to other nodes
+		handleMessage((char*)message, sizeof(Pay));
+	}
+}
+
+void commandBot(bool valToSet)
+{
+	//sets the values for the thread of the bot or calls it if needed
+	shouldBotRun = valToSet;
+	if (valToSet)
+	{
+		if (Number_Coins == 0)
+		{
+			cout << "you don't have enough money" << '\n';
+			return;
+		}
+		post(ThreadPool, []() { payRandom(); });
+	}
+}
+
+void estimateAmount()
+{
+	//prints an estimation for the number of online users
+	cout << "There are approximatly " << estimateUserAmount() << " users online right now" << '\n';
+}
+
 void processCommands()
 {
 	//gets commands from the user and executes them
@@ -223,5 +286,13 @@ void processCommands()
 			askInformation(false);
 		else if (command == "PRINT_BLOCK_NUMBER")
 			printBlockNumberApproved();
+		else if (command == "PRINT_STAKED")
+			printDataStakingPoolOperators();
+		else if (command == "START_BOT")
+			commandBot(true);
+		else if (command == "STOP_BOT")
+			commandBot(false);
+		else if (command == "USER_COUNT")
+			estimateAmount();
 	}
 }

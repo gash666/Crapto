@@ -162,11 +162,8 @@ bool sendMessage(char* message, int len, char* receivingIp, int receivingPort, b
         cout << "error sending message: " << WSAGetLastError() << '\n';
         return false;
     }
-    else
-    {
-        if (len > 0)
-            cout << "Sent to " << tempIp << " " << unsigned short(receivingPort) << " " << bytesSent << " bytes. message of type: " << hex << setw(2) << std::setfill('0') << static_cast<unsigned>(static_cast<unsigned char>(message[0])) << '\n' << dec;
-    }
+    //else if (len > 0 and message[0] == 0x0c)
+    //        cout << "Sent to " << tempIp << " " << unsigned short(receivingPort) << " " << bytesSent << " bytes. message type: " << hex << setw(2) << std::setfill('0') << static_cast<unsigned>(static_cast<unsigned char>(message[0])) << '\n' << dec;
         
     //returns that the message was sent successfully
     return true;
@@ -219,9 +216,8 @@ int receiveMessage(char* receiveBuffer)
         cout << "error receiving message: " << WSAGetLastError() << '\n';
         return -1;
     }
-
-    if (bytesReceived > 0)
-        cout << "Received " << bytesReceived << " bytes. message of type " << hex << setw(2) << std::setfill('0') << static_cast<unsigned>(static_cast<unsigned char>(receiveBuffer[0])) << dec << '\n';
+    //if (bytesReceived > 0 and receiveBuffer[0] == 0x0c)
+    //    cout << "Received " << bytesReceived << " bytes. message type " << hex << setw(2) << std::setfill('0') << static_cast<unsigned>(static_cast<unsigned char>(receiveBuffer[0])) << dec << '\n';
 
     if (receiveBuffer[0] == 0)
     {

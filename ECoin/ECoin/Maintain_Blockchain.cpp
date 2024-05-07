@@ -45,7 +45,7 @@ int checkPayment(Transaction* paymentTransaction, unsigned long long time, bool 
 			return 0;
 
 		//check signature
-		bool isGood = verifySignature((const unsigned char*)paymentTransaction, offsetof(Pay_6, signature), (const unsigned char*)&(paymentTransaction->payMessage.senderDetails.nodeID), (const unsigned char*)&(paymentTransaction->payMessage.signature));
+		bool isGood = verifySignature((const unsigned char*)paymentTransaction, offsetof(Pay, signature), (const unsigned char*)&(paymentTransaction->payMessage.senderDetails.nodeID), (const unsigned char*)&(paymentTransaction->payMessage.signature));
 		if (!isGood)
 			return 0;
 
@@ -59,7 +59,7 @@ int checkPayment(Transaction* paymentTransaction, unsigned long long time, bool 
 
 		//check if the payment is already in the block
 		char shaOfPay[32];
-		SHA256((char*)paymentTransaction, sizeof(Pay_6), shaOfPay);
+		SHA256((char*)paymentTransaction, sizeof(Pay), shaOfPay);
 		if (isAlreadyIn(shaOfPay, 1))
 			return 0;
 
@@ -98,110 +98,120 @@ int checkPayment(Transaction* paymentTransaction, unsigned long long time, bool 
 	return 2;
 }
 
-int checkBindStakingPoolOperator(Bind_Staking_Pool_Operator_10* check, unsigned long long time, bool isConfirmed)
+int checkBindStakingPoolOperator(Contract* check, unsigned long long time, bool isConfirmed)
 {
 	//check if the bind of a staking pool operator is ok
 	//check if the message needs confirmation
 	if (!isConfirmed)
 	{
 		//check if the message id is valid
-		if (check->messageId != BIND_STAKING_POOL_OPERATOR)
+		if (check->contract.messageId != BIND_STAKING_POOL_OPERATOR)
 			return 0;
 
 		//check if the Bind_Staking_Pool_Operator is ok
-		if (!verifySignature((const unsigned char*)check, offsetof(Bind_Staking_Pool_Operator_10, signature), (const unsigned char*)&(check->newStakingPoolOperator.nodeID), (const unsigned char*)&(check->signature)))
+		if (!verifySignature((const unsigned char*)check, offsetof(Bind_Staking_Pool_Operator, signature), (const unsigned char*)&(check->contract.newStakingPoolOperator.nodeID), (const unsigned char*)&(check->contract.signature)))
 			return 0;
 
 		//check if the user is already a staking pool operator
-		if (isInTreapInd(&check->newStakingPoolOperator, 1))
+		if (isInTreapInd(&check->contract.newStakingPoolOperator, 1))
 			return 0;
 
 		//check if the time of applying is ok
-		if (check->startTime % Time_Block != 0 or check->startTime < time or check->untilTime % Time_Block != 0 or check->startTime >= check->untilTime)
+		if (check->contract.startTime % Time_Block != 0 or check->contract.startTime < time or check->contract.untilTime % Time_Block != 0 or check->contract.startTime >= check->contract.untilTime)
 			return 0;
 
 		//check if the payment is applied at the right time
-		if (check->startTime != time)
+		if (check->contract.startTime != time)
 			return 1;
 
 		//check if the user has enough money to become a staking pool operator
-		if (Is_Staking_Pool_Operator and getAmountOfMoneyInd(&check->newStakingPoolOperator, 1) < Min_Coins_Staking_Pool_Operator)
+		if (Is_Staking_Pool_Operator and getAmountOfMoneyInd(&check->contract.newStakingPoolOperator, 1) < Min_Coins_Staking_Pool_Operator)
 			return 0;
 	}
 
 	//apply the contract
-	addToTree(&check->newStakingPoolOperator, getAmountOfMoneyInd(&check->newStakingPoolOperator, 1), 1, 0, NULL);
-	setVariableIndPlace(&check->newStakingPoolOperator, 1, 0, check->untilTime);
-	updateCoinAmount(&check->newStakingPoolOperator, getAmountOfMoneyInd(&check->newStakingPoolOperator, 1), 1);
+	addToTree(&check->contract.newStakingPoolOperator, check->amountOfMoney, 1, 0, NULL);
+	setVariableIndPlace(&check->contract.newStakingPoolOperator, 1, 0, check->contract.untilTime);
+	updateCoinAmount(&check->contract.newStakingPoolOperator, check->amountOfMoney, 1);
 
 	return 2;
 }
 
-int checkBindRandomStakingPoolOperator(Bind_Random_Staking_Pool_Operator_9* check, unsigned long long time, bool isConfirmed)
+int checkBindRandomStakingPoolOperator(Contract_Random* check, unsigned long long time, bool isConfirmed)
 {
 	//check if the Bind_Staking_Pool_Operator is ok
 	//check if the user is the first bootnode and the bind is his
-	if (isFirstAll and memcmp(&My_Details, &check->newStakingPoolOperator, sizeof(NodeDetails)) == 0)
+	if (isFirstAll and memcmp(&My_Details, &check->contract.newStakingPoolOperator, sizeof(NodeDetails)) == 0)
 		isConfirmed = true;
 
 	//check if the message needs confirmation
 	if (!isConfirmed)
 	{
 		//check if the message id is valid
-		if (check->messageId != BIND_RANDOM_STAKING_POOL_OPERATOR)
+		if (check->contract.messageId != BIND_RANDOM_STAKING_POOL_OPERATOR)
 			return 0;
 
 		//check if the Bind_Staking_Pool_Operator is ok
-		if (!verifySignature((const unsigned char*)check, offsetof(Bind_Random_Staking_Pool_Operator_9, signature), (const unsigned char*)&(check->newStakingPoolOperator.nodeID), (const unsigned char*)&(check->signature)))
+		if (!verifySignature((const unsigned char*)check, offsetof(Bind_Random_Staking_Pool_Operator, signature), (const unsigned char*)&(check->contract.newStakingPoolOperator.nodeID), (const unsigned char*)&(check->contract.signature)))
 			return 0;
 
 		//check if the user is already a staking pool operator
-		if (isInTreapInd(&check->newStakingPoolOperator, 1))
+		if (isInTreapInd(&check->contract.newStakingPoolOperator, 1))
 			return 0;
 
 		//check if the time of applying is ok
-		if (check->startTime % Time_Block != 0 or check->startTime < time or check->untilTime % Time_Block != 0 or check->startTime >= check->untilTime)
+		if (check->contract.startTime % Time_Block != 0 or check->contract.startTime < time or check->contract.untilTime % Time_Block != 0 or check->contract.startTime >= check->contract.untilTime)
 			return 0;
 
 		//check if the payment is applied at the right time
-		if (check->startTime != time)
+		if (check->contract.startTime != time)
 			return 1;
 
 		//check if the user has enough money to become a staking pool operator
-		if (Is_Staking_Pool_Operator and getAmountOfMoneyInd(&check->newStakingPoolOperator, 1) < Min_Coins_Random_Staking_Pool_Operator)
+		if (getAmountOfMoneyInd(&check->contract.newStakingPoolOperator, 1) < Min_Coins_Random_Staking_Pool_Operator)
+			return 0;
+
+		//check if the amount of money is correct
+		if (getAmountOfMoneyInd(&check->contract.newStakingPoolOperator, 1) != check->amountOfMoney)
 			return 0;
 	}
 
 	//check if the contract is already known to the user
 	char shaOfContract[32];
-	SHA256((char*)check, sizeof(Bind_Random_Staking_Pool_Operator_9), shaOfContract);
-	DataCompare idThisContract(&check->newStakingPoolOperator, 32, shaOfContract);
+	SHA256((char*)check, sizeof(Bind_Random_Staking_Pool_Operator), shaOfContract);
+	DataCompare idThisContract(&check->contract.newStakingPoolOperator, 32, shaOfContract);
 
 	//add the random staking pool operator to the treap of all staking pool operators now
-	addToTree(&check->newStakingPoolOperator, getAmountOfMoneyInd(&check->newStakingPoolOperator, 1), 1, 0, NULL);
-	setVariableIndPlace(&check->newStakingPoolOperator, 1, 0, check->untilTime);
-	updateCoinAmount(&check->newStakingPoolOperator, getAmountOfMoneyInd(&check->newStakingPoolOperator, 1), 1);
+	addToTree(&check->contract.newStakingPoolOperator, check->amountOfMoney, 1, 0, NULL);
+	setVariableIndPlace(&check->contract.newStakingPoolOperator, 1, 0, check->contract.untilTime);
+	updateCoinAmount(&check->contract.newStakingPoolOperator, check->amountOfMoney, 1);
+
+	if (!Is_Staking_Pool_Operator)
+		return 2;
 
 	if (isInTreapInd(idThisContract, 4))
 	{
 		//add the random staking pool operator to the treap of all random staking pool operators now
-		addToTree(&check->newStakingPoolOperator, getAmountOfMoneyInd(&check->newStakingPoolOperator, 1), 3, 0, NULL);
-		setVariableIndPlace(&check->newStakingPoolOperator, 3, 0, check->untilTime);
+		addToTree(&check->contract.newStakingPoolOperator, getAmountOfMoneyInd(&check->contract.newStakingPoolOperator, 1), 3, 0, NULL);
+		setVariableIndPlace(&check->contract.newStakingPoolOperator, 3, 0, check->contract.untilTime);
 		char valueRandom[32];
+		setVariableIndPlace(idThisContract, 3, 0, getVariableIndPlace(idThisContract, 4, 0));
 		setVariableIndPlace(idThisContract, 3, 1, getVariableIndPlace(idThisContract, 4, 1, valueRandom, 32));
 		setVariableIndPlace(idThisContract, 3, 2, getVariableIndPlace(idThisContract, 4, 2), valueRandom, 32);
 	}
 	else
 	{
 		//add the random staking pool operator to the treap of all random staking pool operators now
-		addToTree(&check->newStakingPoolOperator, getAmountOfMoneyInd(&check->newStakingPoolOperator, 1), 3, 0, NULL);
-		setVariableIndPlace(&check->newStakingPoolOperator, 3, 0, check->untilTime);
-		setVariableIndPlace(&check->newStakingPoolOperator, 3, 1, check->startTime - Time_Block);
+		addToTree(&check->contract.newStakingPoolOperator, getAmountOfMoneyInd(&check->contract.newStakingPoolOperator, 1), 3, 0, NULL);
+		setVariableIndPlace(&check->contract.newStakingPoolOperator, 3, 0, check->contract.untilTime);
+		setVariableIndPlace(&check->contract.newStakingPoolOperator, 3, 1, check->contract.startTime - Time_Block, check->contract.randomValueCommit, 32);
+		char tempval[32];
+		getVariableIndPlace(&check->contract.newStakingPoolOperator, 3, 1, tempval, 32);
 
 		//add the random staking pool operator to the treap of all random staking pool operators
-		addToTree(&check->newStakingPoolOperator, getAmountOfMoneyInd(&check->newStakingPoolOperator, 1), 4, 32, shaOfContract);
-		setVariableIndPlace(idThisContract, 4, 0, check->untilTime);
-		setVariableIndPlace(idThisContract, 4, 1, time);
+		addToTree(&check->contract.newStakingPoolOperator, getAmountOfMoneyInd(&check->contract.newStakingPoolOperator, 1), 4, 32, shaOfContract);
+		setVariableIndPlace(idThisContract, 4, 0, check->contract.untilTime);
+		setVariableIndPlace(idThisContract, 4, 1, check->contract.startTime - Time_Block, check->contract.randomValueCommit, 32);
 	}
 
 	return 2;
@@ -210,13 +220,13 @@ int checkBindRandomStakingPoolOperator(Bind_Random_Staking_Pool_Operator_9* chec
 void ReverseBlockUntil(char* message, int len, pair <int, int> untilWhere)
 {
 	//reverses the actions in the block until a certain point
-	Block_7* m = (Block_7*)message;
+	Block* m = (Block*)message;
 
 	//reverse the money added to the block creator
 	setAmountMoneyInd(&m->BlockCreator, getAmountOfMoneyInd(&m->BlockCreator, 1) - Number_Coins_Per_Block, 1);
 
 	//initialize a pointer to the place where the contents of the block starts
-	char* tempPointer = message + sizeof(Block_7);
+	char* tempPointer = message + sizeof(Block) + m->HowmanyFromEachType[0] * (sizeof(NodeDetails) + 32);
 
 	//check if there in nothing else to reverse
 	if (untilWhere.first == 0)
@@ -253,16 +263,16 @@ void ReverseBlockUntil(char* message, int len, pair <int, int> untilWhere)
 	for (int a = 0; a < until; a++)
 	{
 		//get the amounts of money
-		unsigned long long moneySender = getAmountOfMoneyInd(&((Pay_6*)tempPointer)->senderDetails, 1);
-		unsigned long long moneyReceiver = getAmountOfMoneyInd(&((Pay_6*)tempPointer)->receiverDetails, 1);
+		unsigned long long moneySender = getAmountOfMoneyInd(&((Pay*)tempPointer)->senderDetails, 1);
+		unsigned long long moneyReceiver = getAmountOfMoneyInd(&((Pay*)tempPointer)->receiverDetails, 1);
 
 		//get the original amounts
-		moneySender += ((Pay_6*)tempPointer)->amountToPay;
-		moneyReceiver -= ((Pay_6*)tempPointer)->amountToPay;
+		moneySender += ((Pay*)tempPointer)->amountToPay;
+		moneyReceiver -= ((Pay*)tempPointer)->amountToPay;
 
 		//save the amounts before the payment
-		setAmountMoneyInd(&((Pay_6*)tempPointer)->senderDetails, moneySender, 1);
-		setAmountMoneyInd(&((Pay_6*)tempPointer)->receiverDetails, moneyReceiver, 1);
+		setAmountMoneyInd(&((Pay*)tempPointer)->senderDetails, moneySender, 1);
+		setAmountMoneyInd(&((Pay*)tempPointer)->receiverDetails, moneyReceiver, 1);
 
 		//update the pointer
 		tempPointer += sizeof(Transaction);
@@ -272,6 +282,8 @@ void ReverseBlockUntil(char* message, int len, pair <int, int> untilWhere)
 bool checkRandomReveal(NodeDetails* sender, char* newRandomValue, unsigned long long timeSent, char* hashOfContract)
 {
 	//checks if the random number is known to the user, if it valid and if so updates it
+	lock_guard <mutex> lock2(canReceiveRandom);
+
 	//initialize variables
 	unsigned long long timeReceived = Get_Time();
 	char randomBefore[32], tempValue[32];
@@ -281,7 +293,6 @@ bool checkRandomReveal(NodeDetails* sender, char* newRandomValue, unsigned long 
 	//update the values in the treap of the approved random staking pool operators
 	if (last != 0 and last <= timeSent)
 	{
-		cout << "the times are: " << timeSent << " " << last << '\n';
 		//calculate the value this should reveal about
 		for (int a = 0; a < (timeSent - last) / Time_Block; a++)
 			SHA256(tempValue, 32, tempValue);
@@ -342,7 +353,7 @@ bool checkRandomReveal(NodeDetails* sender, char* newRandomValue, unsigned long 
 		if (memcmp(tempValue, randomBefore, 32) == 0)
 		{
 			setVariableIndPlace(DataCompare(sender, 32, hashOfContract), 4, 1, timeSent, newRandomValue, 32);
-			setVariableIndPlace(sender, 4, 2, timeReceived);
+			setVariableIndPlace(DataCompare(sender, 32, hashOfContract), 4, 2, timeReceived);
 		}
 	}
 
@@ -352,9 +363,17 @@ bool checkRandomReveal(NodeDetails* sender, char* newRandomValue, unsigned long 
 void applyOneBlock(char* startOfBlock, int sizeOfBlock)
 {
 	//apply a given block
-	Block_7* blockPointer = (Block_7*)(startOfBlock);
+	Block* blockPointer = (Block*)(startOfBlock);
 
-	char* tempPointer = startOfBlock + sizeof(Block_7) + blockPointer->HowmanyFromEachType[0] * sizeof(Random_Reveal);
+	//removes staking pool operators that their contract has ended
+	deleteAllNodeIndPlace(1, 0, blockPointer->TimeAtCreation - Time_Block);
+	deleteAllNodeIndPlace(3, 0, blockPointer->TimeAtCreation - Time_Block);
+
+	char* tempPointer = startOfBlock + sizeof(Block) + blockPointer->HowmanyFromEachType[0] * sizeof(Random_Reveal);
+
+	//update the new amount of money of the block creator
+	updateCoinAmount(&blockPointer->BlockCreator, askNumberOfCoins(&blockPointer->BlockCreator, 1) + Number_Coins_Per_Block, 1);
+	setAmountMoneyInd(&blockPointer->BlockCreator, blockPointer->newAmountCreator, 1);
 
 	//apply the punishments for random staking pool operators who didn't reveal their number
 	for (int a = 0; a < blockPointer->HowmanyFromEachType[1]; a++, tempPointer += sizeof(NodeDetails))
@@ -371,22 +390,17 @@ void applyOneBlock(char* startOfBlock, int sizeOfBlock)
 		setAmountMoneyInd((NodeDetails*)tempPointer, amountOfMoney, 1);
 	}
 
-	//update the new amount of money of the block creator
-	if (isInTreapInd(&blockPointer->BlockCreator, 1))
-		updateCoinAmount(&blockPointer->BlockCreator, askNumberOfCoins(&blockPointer->BlockCreator, 1) + Number_Coins_Per_Block, 1);
-	setAmountMoneyInd(&blockPointer->BlockCreator, blockPointer->newAmountCreator, 1);
-
 	//apply the payments
 	for (int a = 0; a < blockPointer->HowmanyFromEachType[2]; a++, tempPointer += sizeof(Transaction))
 		checkPayment((Transaction*)tempPointer, 0, true);
 
 	//apply the contracts that bind random staking pool operators
-	for (int a = 0; a < blockPointer->HowmanyFromEachType[3]; a++, tempPointer += sizeof(Bind_Random_Staking_Pool_Operator_9))
-		checkBindRandomStakingPoolOperator((Bind_Random_Staking_Pool_Operator_9*)tempPointer, 0, true);
+	for (int a = 0; a < blockPointer->HowmanyFromEachType[3]; a++, tempPointer += sizeof(Contract_Random))
+		checkBindRandomStakingPoolOperator((Contract_Random*)tempPointer, 0, true);
 
 	//apply the contracts that bind staking pool operators
-	for (int a = 0; a < blockPointer->HowmanyFromEachType[4]; a++, tempPointer += sizeof(Bind_Staking_Pool_Operator_10))
-		checkBindStakingPoolOperator((Bind_Staking_Pool_Operator_10*)tempPointer, 0, true);
+	for (int a = 0; a < blockPointer->HowmanyFromEachType[4]; a++, tempPointer += sizeof(Contract))
+		checkBindStakingPoolOperator((Contract*)tempPointer, 0, true);
 
 	//removes staking pool operators that their contract has ended
 	deleteAllNodeIndPlace(1, 0, blockPointer->TimeAtCreation);
@@ -396,8 +410,6 @@ void applyOneBlock(char* startOfBlock, int sizeOfBlock)
 void initializeTreapsAll()
 {
 	//initialize the treaps
-	deleteTreapAll(1);
-	deleteTreapAll(3);
 	copyTreap(0, 1);
 	copyTreap(2, 3);
 }
@@ -405,10 +417,9 @@ void initializeTreapsAll()
 void applyBlockFake(char* shaOfBlock)
 {
 	//get the path to the head
-
 	pair <char*, int> answer = getPathToNode(shaOfBlock);
 	initializeTreapsAll();
-
+	
 	//apply the blocks on the path
 	for (int a = answer.second - 1; a >= 0; a--)
 	{
@@ -441,36 +452,40 @@ void applyBlockReal(char* shaOfBlock)
 {
 	//apply a block to the real state
 	//applies the blocks
-	applyBlockFake(shaOfBlock);
+	pair <char*, int> blockApproved = getBlock(shaOfBlock);
+	
+	//applyBlockFake(shaOfBlock);
+	applyBlockFake(((Block*)blockApproved.first)->SHA256OfParent);
 
 	//switches the treaps of the fake and real states
-	deleteTreapAll(0);
-	deleteTreapAll(2);
 	swapTreaps(0, 1);
 	swapTreaps(2, 3);
 
 	//set that the initiation process is completed
 	isFirstAll = false;
 
+	//update the last time of an approved block
+	lastTimeApproved = ((Block*)blockApproved.first)->TimeAtCreation - Time_Block;
+
 	//set the amount of money for this user
 	Number_Coins = getAmountOfMoneyInd(&My_Details, 1);
+	loadIntoFile();
 	pair <char*, int> theNewHead = getBlock(shaOfBlock);
-	blockNumberApproved = ((Block_7*)theNewHead.first)->BlockNumber;
+	blockNumberApproved = ((Block*)theNewHead.first)->BlockNumber;
+
+	deleteAllNodeIndPlace(4, 0, ((Block*)theNewHead.first)->TimeAtCreation - Time_Block);
 
 	makeNewRoot(shaOfBlock);
 }
 
 void tryApproveBlock()
 {
-	//send the block and try to confirm it
-	//initialize variables
-	isThisUserCreating = true;
-	deleteTreapAll(5);
-
+	//tries to approve the block
 	//check every 4 seconds for 20 seconds if there are enough signatures
 	for (int a = 0; a < 5; a++)
 	{
 		this_thread::sleep_for(chrono::milliseconds(4000));
+
 		pair <char*, int> message = Handle_Confirm_Block_All_Create();
 		if (Handle_Confirm_Block_All_Process(message.first, message.second))
 		{
@@ -479,6 +494,7 @@ void tryApproveBlock()
 		}
 		free(message.first);
 	}
+
 	isThisUserCreating = false;
 	Signatures_For_Confirm_Message = {};
 }
@@ -492,31 +508,38 @@ void tryCreateNextBlock()
 	BlockTreeNode* parentOfNew = createOnThisBlock();
 	applyBlockFake(parentOfNew->sha256OfBlock);
 
+	//removes staking pool operators that their contract has ended
+	unsigned long long temp = Get_Time();
+	temp -= temp % Time_Block + Time_Block;
+	deleteAllNodeIndPlace(1, 0, temp);
+	deleteAllNodeIndPlace(3, 0, temp);
+
 	//initialize variable
 	char nextCreator[32]{ 0 };
 
 	//get the xor of all random numbers that were revealed
-	getXorAll(((Block_7*)parentOfNew->startOfBlock)->TimeAtCreation, nextCreator);
+	unsigned long long timeNow = Get_Time() - Time_Block;
+	timeNow -= timeNow % Time_Block;
+	getXorAll(timeNow, nextCreator);
 
 	//get the next creator
 	NodeDetails answer;
 	getNextBlockCreator(nextCreator, &answer);
 
+	if (memcmp(&My_Details, &answer, sizeof(NodeDetails)) == 0)
+		cout << "i am the creator!!!" << '\n';
+	else
+		cout << "i am not the creator!!!" << '\n';
+
 	//check if this user is the next creator and if it is, create it
 	if (memcmp(&My_Details, &answer, sizeof(NodeDetails)) == 0)
 	{
 		//create the new block
-		pair <char*, int> blockMessage = Handle_Block_Create(parentOfNew->sha256OfBlock, ((Block_7*)parentOfNew->startOfBlock)->BlockNumber + 1);
+		pair <char*, int> blockMessage = Handle_Block_Create(parentOfNew->sha256OfBlock, ((Block*)parentOfNew->startOfBlock)->BlockNumber + 1);
 		spreadMessage(blockMessage.first, blockMessage.second);
-
-		//set the hash of the block
-		SHA256(blockMessage.first, blockMessage.second, hashBlockCreating);
 
 		//free the memory
 		free(blockMessage.first);
-
-		//call the function that tries to collect signatures to approve the blocks
-		post(ThreadPool, []() { tryApproveBlock(); });
 	}
 
 	//reverse the simulation of the state before the block

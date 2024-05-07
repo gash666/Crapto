@@ -549,7 +549,6 @@ void Node::copyData()
 	//copy the data into an array
 	if (lp == NULL and rp == NULL)
 	{
-		cout << "the money here is: " << amountOfMoney << '\n';
 		char dataToCopy[sizeof(NodeDetails) + sizeof(unsigned long long)];
 		copy(&nodeInfo, (NodeDetails*)((char*)&nodeInfo + sizeof(NodeDetails)), (NodeDetails*)dataToCopy);
 		copy(&amountOfMoney, (unsigned long long*)((char*)&amountOfMoney + sizeof(unsigned long long)), (unsigned long long*)(dataToCopy + sizeof(NodeDetails)));
@@ -619,10 +618,12 @@ void fillListInd(int howmany, char* val, NodeDetails* placeList, int ind)
 	trees[ind]->fillList(howmany, val, placeList);
 }
 
-bool addNodeToTreeInd(NodeDetails* newNode, int ind)
+bool addNodeToTreeInd(NodeDetails* newNode, int ind, bool overRide)
 {
 	//adds a new node to the tree
 	lock_guard <mutex> lock(*mutexVectorNodeSupporter[ind]);
+	if (ind == 1 and !Is_Staking_Pool_Operator and !overRide and memcmp(&My_Details, newNode, sizeof(NodeDetails)) != 0)
+		return false;
 	//return trees[ind]->addNodeToTree(newNode);
 	bool temp = trees[ind]->addNodeToTree(newNode);
 	return temp;
@@ -713,6 +714,35 @@ void sendMessageBuckets(char* message, int messageSize)
 
 void copyAllData(int ind)
 {
+	//copies the data to send to other users
 	lock_guard <mutex> lock(*mutexVectorNodeSupporter[ind]);
 	trees[ind]->headOfTree->copyData();
+}
+
+int estimateUserAmount()
+{
+	//returns an estimation of the number of online users
+	lock_guard <mutex> lock(*mutexVectorNodeSupporter[0]);
+
+	//get the first bucket that is not empty
+	int firstNotZero = -1;
+	for (int a = 254; a >= 0 and firstNotZero == -1; a--)
+		if (!buckets[a].empty())
+			firstNotZero = a;
+
+	//initialize variables
+	int lastNotFull = firstNotZero;
+	unsigned long long powerToEstimate = 1, sum = 0;
+
+	//calculate the estimation for thee number of online users
+	for (int a = 0; a < firstNotZero; a++)
+		powerToEstimate *= 2;
+	while (lastNotFull >= 0 and buckets[lastNotFull].size() != Bucket_Size)
+	{
+		sum += buckets[lastNotFull].size() * powerToEstimate;
+		lastNotFull--;
+		powerToEstimate /= 2;
+	}
+
+	return sum / (firstNotZero - lastNotFull) + 1;
 }

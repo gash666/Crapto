@@ -48,16 +48,16 @@ unsigned long long Get_Message_Number()
     return millisecondsSinceEpoch * 100000 + Number_Now;
 }
 
-void Handle_Connect_Create(Connect_0* ans)
+void Handle_Connect_Create(Connect* ans)
 {
     //creates the message to send in order to connect
     ans->messageId = CONNECT;
     ans->messageNumber = Get_Message_Number();
     copy(My_Details.nodeID, My_Details.nodeID + sizeof(NodeDetails::nodeID), ans->nodeId);
-    signMessage((const unsigned char*)ans, offsetof(Connect_0, signature), (unsigned char*)ans->signature);
+    signMessage((const unsigned char*)ans, offsetof(Connect, signature), (unsigned char*)ans->signature);
 }
 
-void Handle_Answer_Connect_Create(char* idAsk, Answer_Connect_1* ans)
+void Handle_Answer_Connect_Create(char* idAsk, Answer_Connect* ans)
 {
     //creates the answer to send after receiving connect
     ans->messageId = ANSWER_CONNECT;
@@ -67,20 +67,20 @@ void Handle_Answer_Connect_Create(char* idAsk, Answer_Connect_1* ans)
     Convert_Ip_To_Char_Array(address.first, ans->answerIdentity.ip);
     ans->answerIdentity.port = (short)address.second;
     copy(idAsk, idAsk + 32, ans->answerIdentity.nodeID);
-    signMessage((const unsigned char*)ans, offsetof(Answer_Connect_1, signature), (unsigned char*)&(ans->signature));
+    signMessage((const unsigned char*)ans, offsetof(Answer_Connect, signature), (unsigned char*)&(ans->signature));
 }
 
-void Handle_Ask_Close_Create(char* closeTo, Ask_Close_2* ans)
+void Handle_Ask_Close_Create(char* closeTo, Ask_Close* ans)
 {
     //creates the question to ask who is close to a certain node
     ans->messageId = ASK_CLOSE;
     ans->messageNumber = Get_Message_Number();
     copy(&My_Details, (NodeDetails*)((char*)&My_Details + sizeof(NodeDetails)), &ans->senderDetails);
     copy(closeTo, closeTo + 32, ans->target);
-    signMessage((const unsigned char*)ans, offsetof(Ask_Close_2, signature), (unsigned char*)&(ans->signature));
+    signMessage((const unsigned char*)ans, offsetof(Ask_Close, signature), (unsigned char*)&(ans->signature));
 }
 
-void Handle_Answer_Close_Create(char* closeTo, Answer_Close_3* ans)
+void Handle_Answer_Close_Create(char* closeTo, Answer_Close* ans)
 {
     //creates a message that answers the question in the message received
     ans->messageId = ANSWER_CLOSE;
@@ -90,30 +90,30 @@ void Handle_Answer_Close_Create(char* closeTo, Answer_Close_3* ans)
         ans->answerClose[a].port = 0;
     fillListInd(Bucket_Size, closeTo, ans->answerClose, 0);
     copy(closeTo, closeTo + 32, ans->target);
-    signMessage((const unsigned char*)ans, offsetof(Answer_Close_3, signature), (unsigned char*)&(ans->signature));
+    signMessage((const unsigned char*)ans, offsetof(Answer_Close, signature), (unsigned char*)&(ans->signature));
 }
 
-void Handle_Ask_Ping_Create(NodeDetails* sendTo, Ask_Ping_4* ans)
+void Handle_Ask_Ping_Create(NodeDetails* sendTo, Ask_Ping* ans)
 {
     //creates a message that pings another user
     ans->messageId = ASK_PING;
     ans->messageNumber = Get_Message_Number();
     copy(&My_Details, (NodeDetails*)((char*)&My_Details + sizeof(NodeDetails)), &ans->senderDetails);
     copy(sendTo, (NodeDetails*)((char*)sendTo + sizeof(NodeDetails)), &ans->receiverDetails);
-    signMessage((const unsigned char*)ans, offsetof(Ask_Ping_4, signature), (unsigned char*)&(ans->signature));
+    signMessage((const unsigned char*)ans, offsetof(Ask_Ping, signature), (unsigned char*)&(ans->signature));
 }
 
-void Handle_Answer_Ping_Create(NodeDetails* sendTo, Answer_Ping_5* ans)
+void Handle_Answer_Ping_Create(NodeDetails* sendTo, Answer_Ping* ans)
 {
     //creates a message that answers a ping from another user
     ans->messageId = ANSWER_PING;
     ans->messageNumber = Get_Message_Number();
     copy(&My_Details, (NodeDetails*)((char*)&My_Details + sizeof(NodeDetails)), &ans->senderDetails);
     copy(sendTo, (NodeDetails*)((char*)sendTo + sizeof(NodeDetails)), &ans->receiverDetails);
-    signMessage((const unsigned char*)ans, offsetof(Answer_Ping_5, signature), (unsigned char*)&(ans->signature));
+    signMessage((const unsigned char*)ans, offsetof(Answer_Ping, signature), (unsigned char*)&(ans->signature));
 }
 
-void Handle_Pay_Create(NodeDetails* payTo, unsigned long long amountPay, Pay_6* ans)
+void Handle_Pay_Create(NodeDetails* payTo, unsigned long long amountPay, Pay* ans)
 {
     //creates a message that pays another user
     ans->messageId = PAY;
@@ -123,13 +123,13 @@ void Handle_Pay_Create(NodeDetails* payTo, unsigned long long amountPay, Pay_6* 
     copy(&My_Details, (NodeDetails*)((char*)&My_Details + sizeof(NodeDetails)), &ans->senderDetails);
     copy(payTo, (NodeDetails*)((char*)payTo + sizeof(NodeDetails)), &ans->receiverDetails);
     ans->amountToPay = amountPay;
-    signMessage((const unsigned char*)ans, offsetof(Pay_6, signature), (unsigned char*)&(ans->signature));
+    signMessage((const unsigned char*)ans, offsetof(Pay, signature), (unsigned char*)&(ans->signature));
 }
 
 pair <char*, int> Handle_Block_Create(char* shaOfParent, unsigned long long blockNumber)
 {
     //creates the next block to be on the blockchain
-    Block_7* ans = (Block_7*)malloc(Maximum_Message_Size);
+    Block* ans = (Block*)malloc(Maximum_Message_Size);
 
     //check if the memory allocation worked
     if (ans == nullptr)
@@ -151,14 +151,14 @@ pair <char*, int> Handle_Block_Create(char* shaOfParent, unsigned long long bloc
     setAmountMoneyInd(&My_Details, ans->newAmountCreator, 1);
 
     //initialize a pointer to the place where the contents of the block starts
-    char* tempPointer = (char*) ans + sizeof(Block_7);
+    char* tempPointer = (char*) ans + sizeof(Block);
 
     //add the random numbers that are revealed to the block
-    ans->HowmanyFromEachType[0] = (unsigned char)copyDetailsFromTreapInd(2, tempPointer, ans->TimeAtCreation - Time_Block, true);
+    ans->HowmanyFromEachType[0] = (unsigned char)copyDetailsFromTreapInd(3, tempPointer, ans->TimeAtCreation - Time_Block, true);
     tempPointer += ans->HowmanyFromEachType[0] * sizeof(Random_Reveal);
 
     //add the users who didn't send their random numbers to the block
-    ans->HowmanyFromEachType[1] = (unsigned char)copyDetailsFromTreapInd(1, tempPointer, ans->TimeAtCreation - Time_Block, false);
+    ans->HowmanyFromEachType[1] = (unsigned char)copyDetailsFromTreapInd(3, tempPointer, ans->TimeAtCreation - Time_Block, false);
     tempPointer += ans->HowmanyFromEachType[1] * sizeof(NodeDetails);
 
     //add the payments to the block
@@ -168,12 +168,12 @@ pair <char*, int> Handle_Block_Create(char* shaOfParent, unsigned long long bloc
         if (getFirstAdded(0, tempPointer))
         {
             //calculate the new amounts of money of the sender and receiver
-            unsigned long long moneySender = getAmountOfMoneyInd(&((Pay_6*)tempPointer)->senderDetails, 1) - ((Pay_6*)tempPointer)->amountToPay;
-            unsigned long long moneyReceiver = getAmountOfMoneyInd(&((Pay_6*)tempPointer)->receiverDetails, 1) + ((Pay_6*)tempPointer)->amountToPay;
+            unsigned long long moneySender = getAmountOfMoneyInd(&((Pay*)tempPointer)->senderDetails, 1) - ((Pay*)tempPointer)->amountToPay;
+            unsigned long long moneyReceiver = getAmountOfMoneyInd(&((Pay*)tempPointer)->receiverDetails, 1) + ((Pay*)tempPointer)->amountToPay;
 
             //copy the new amounts of money
-            copy((char*)&moneySender, (char*)&moneySender + sizeof(unsigned long long), tempPointer + sizeof(Pay_6));
-            copy((char*)&moneyReceiver, (char*)&moneyReceiver + sizeof(unsigned long long), tempPointer + sizeof(Pay_6) + sizeof(unsigned long long));
+            copy((char*)&moneySender, (char*)&moneySender + sizeof(unsigned long long), tempPointer + sizeof(Pay));
+            copy((char*)&moneyReceiver, (char*)&moneyReceiver + sizeof(unsigned long long), tempPointer + sizeof(Pay) + sizeof(unsigned long long));
 
             //check if the transaction is ok
             int result = checkPayment((Transaction*)tempPointer, ans->TimeAtCreation);
@@ -202,6 +202,9 @@ pair <char*, int> Handle_Block_Create(char* shaOfParent, unsigned long long bloc
             break;
     ans->HowmanyFromEachType[2] = a;
 
+    //remove the payments from the queue and map
+    reset(1);
+
     //add the random staking pool operators binds to the block
     allIn = getSizeInd(2); a = 0;
     ans->HowmanyFromEachType[3] = Max_Number_Bind_Random_Staking_Pool_Operator_Block;
@@ -209,7 +212,8 @@ pair <char*, int> Handle_Block_Create(char* shaOfParent, unsigned long long bloc
         if (getFirstAdded(2, tempPointer))
         {
             //check if the Bind_Random_Staking_Pool_Operator is ok
-            int result = checkBindRandomStakingPoolOperator((Bind_Random_Staking_Pool_Operator_9*)tempPointer, ans->TimeAtCreation);
+            ((Contract_Random*)tempPointer)->amountOfMoney = getAmountOfMoneyInd(&((Bind_Random_Staking_Pool_Operator*)tempPointer)->newStakingPoolOperator, 1);
+            int result = checkBindRandomStakingPoolOperator((Contract_Random*)tempPointer, ans->TimeAtCreation);
 
             //check if it will be ok in the future
             if (result == 1)
@@ -228,7 +232,7 @@ pair <char*, int> Handle_Block_Create(char* shaOfParent, unsigned long long bloc
             }
 
             //update the pointer and remove the first message
-            tempPointer += sizeof(Bind_Random_Staking_Pool_Operator_9);
+            tempPointer += sizeof(Contract_Random);
             popFrontInd(2);
         }
         else
@@ -242,7 +246,8 @@ pair <char*, int> Handle_Block_Create(char* shaOfParent, unsigned long long bloc
         if (getFirstAdded(3, tempPointer))
         {
             //check if the Bind_Staking_Pool_Operator is ok
-            int result = checkBindStakingPoolOperator((Bind_Staking_Pool_Operator_10*)tempPointer, ans->TimeAtCreation);
+            ((Contract*)tempPointer)->amountOfMoney = getAmountOfMoneyInd(&((Bind_Staking_Pool_Operator*)tempPointer)->newStakingPoolOperator, 1);
+            int result = checkBindStakingPoolOperator((Contract*)tempPointer, ans->TimeAtCreation);
 
             //check if it will be ok in the future
             if (result == 1)
@@ -261,7 +266,7 @@ pair <char*, int> Handle_Block_Create(char* shaOfParent, unsigned long long bloc
             }
 
             //update the pointer and remove the first message
-            tempPointer += sizeof(Bind_Staking_Pool_Operator_10);
+            tempPointer += sizeof(Contract);
             popFrontInd(3);
         }
         else
@@ -280,7 +285,7 @@ pair <char*, int> Handle_Block_Create(char* shaOfParent, unsigned long long bloc
 
 //message with id 8 - contract
 
-void Handle_Bind_Random_Staking_Pool_Operator_Create(char* randomVal, unsigned long long timeStart, unsigned long long timeEnd, Bind_Random_Staking_Pool_Operator_9* ans)
+void Handle_Bind_Random_Staking_Pool_Operator_Create(char* randomVal, unsigned long long timeStart, unsigned long long timeEnd, Bind_Random_Staking_Pool_Operator* ans)
 {
     //creates a contract that binds a user to be a staking pool operator that produces random numbers
     ans->messageId = BIND_RANDOM_STAKING_POOL_OPERATOR;
@@ -288,20 +293,20 @@ void Handle_Bind_Random_Staking_Pool_Operator_Create(char* randomVal, unsigned l
     ans->startTime = timeStart;
     copy(randomVal, randomVal + 32, ans->randomValueCommit);
     copy(&My_Details, (NodeDetails*)((char*)&My_Details + sizeof(NodeDetails)), &ans->newStakingPoolOperator);
-    signMessage((const unsigned char*)ans, offsetof(Bind_Random_Staking_Pool_Operator_9, signature), (unsigned char*)&(ans->signature));
+    signMessage((const unsigned char*)ans, offsetof(Bind_Random_Staking_Pool_Operator, signature), (unsigned char*)&(ans->signature));
 }
 
-void Handle_Bind_Staking_Pool_Operator_Create(unsigned long long timeStart, unsigned long long timeEnd, Bind_Staking_Pool_Operator_10* ans)
+void Handle_Bind_Staking_Pool_Operator_Create(unsigned long long timeStart, unsigned long long timeEnd, Bind_Staking_Pool_Operator* ans)
 {
     //creates a contract that binds a user to be a staking pool operator that produces random numbers
-    ans->messageId = BIND_RANDOM_STAKING_POOL_OPERATOR;
+    ans->messageId = BIND_STAKING_POOL_OPERATOR;
     ans->startTime = timeStart;
     ans->untilTime = timeEnd;
     copy(&My_Details, (NodeDetails*)((char*)&My_Details + sizeof(NodeDetails)), &ans->newStakingPoolOperator);
-    signMessage((const unsigned char*)ans, offsetof(Bind_Staking_Pool_Operator_10, signature), (unsigned char*)&(ans->signature));
+    signMessage((const unsigned char*)ans, offsetof(Bind_Staking_Pool_Operator, signature), (unsigned char*)&(ans->signature));
 }
 
-void Handle_Reveal_Create(char* randomVal, char* hashOfContract, Reveal_11* ans)
+void Handle_Reveal_Create(char* randomVal, char* hashOfContract, Reveal* ans)
 {
     //creates a message that reveals a random number
     ans->messageId = REVEAL;
@@ -310,23 +315,23 @@ void Handle_Reveal_Create(char* randomVal, char* hashOfContract, Reveal_11* ans)
     copy(&My_Details, (NodeDetails*)((char*)&My_Details + sizeof(NodeDetails)), &ans->senderDetails);
     copy(randomVal, randomVal + 32, ans->randomValue);
     copy(hashOfContract, hashOfContract + 32, ans->HashOfContract);
-    signMessage((const unsigned char*)ans, offsetof(Reveal_11, signature), (unsigned char*)&(ans->signature));
+    signMessage((const unsigned char*)ans, offsetof(Reveal, signature), (unsigned char*)&(ans->signature));
 }
 
-void Handle_Confirm_Block_Create(char* blockHash, Confirm_Block_12* ans)
+void Handle_Confirm_Block_Create(char* blockHash, Confirm_Block* ans)
 {
     //creates a message that confirms a block
     ans->messageId = CONFIRM_BLOCK;
     ans->messageNumber = Get_Message_Number();
     copy(&My_Details, (NodeDetails*)((char*)&My_Details + sizeof(NodeDetails)), &ans->senderDetails);
     signMessage((const unsigned char*)blockHash, 32, (unsigned char*)&(ans->BlockSignature));
-    signMessage((const unsigned char*)ans, offsetof(Confirm_Block_12, signature), (unsigned char*)&(ans->signature));
+    signMessage((const unsigned char*)ans, offsetof(Confirm_Block, signature), (unsigned char*)&(ans->signature));
 }
 
 pair <char*, int> Handle_Confirm_Block_All_Create()
 {
     //creates a message that proves the block is valid
-    Confirm_Block_All_13* ans = (Confirm_Block_All_13*)malloc(Signatures_For_Confirm_Message.size() * (sizeof(NodeDetails) + 64) + sizeof(Confirm_Block_All_13) + 64);
+    Confirm_Block_All* ans = (Confirm_Block_All*)malloc(Signatures_For_Confirm_Message.size() * (sizeof(NodeDetails) + 64) + sizeof(Confirm_Block_All) + 64);
 
     //check if the memory allocation worked
     if (ans == nullptr)
@@ -343,7 +348,7 @@ pair <char*, int> Handle_Confirm_Block_All_Create()
     ans->numberOfSignatures = (unsigned int) Signatures_For_Confirm_Message.size();
 
     //initializes a pointer
-    char* tempPointer = (char*) ans + sizeof(Confirm_Block_All_13);
+    char* tempPointer = (char*) ans + sizeof(Confirm_Block_All);
 
     //sets the signatures
     for (int a = 0; a < Signatures_For_Confirm_Message.size(); a++)
@@ -355,25 +360,25 @@ pair <char*, int> Handle_Confirm_Block_All_Create()
     }
 
     //sign the message
-    signMessage((const unsigned char*)ans, Signatures_For_Confirm_Message.size() * (sizeof(NodeDetails) + 64) + sizeof(Confirm_Block_All_13), (unsigned char*) tempPointer);
+    signMessage((const unsigned char*)ans, Signatures_For_Confirm_Message.size() * (sizeof(NodeDetails) + 64) + sizeof(Confirm_Block_All), (unsigned char*) tempPointer);
 
-    return { (char*) ans, (int) (Signatures_For_Confirm_Message.size() * (sizeof(NodeDetails) + 64) + sizeof(Confirm_Block_All_13) + 64) };
+    return { (char*) ans, (int) (Signatures_For_Confirm_Message.size() * (sizeof(NodeDetails) + 64) + sizeof(Confirm_Block_All) + 64) };
 }
 
-void Handle_Ask_All_Info_Create(Ask_All_Info_14* ans, bool isAll)
+void Handle_Ask_All_Info_Create(Ask_All_Info* ans, bool isAll)
 {
     //creates a message that asks for all the information about the blockchain
     ans->messageId = ASK_ALL_INFO;
     ans->messageNumber = Get_Message_Number();
     ans->allOrNot = isAll;
     copy(&My_Details, (NodeDetails*)((char*)&My_Details + sizeof(NodeDetails)), &ans->senderDetails);
-    signMessage((const unsigned char*)ans, offsetof(Ask_All_Info_14, signature), (unsigned char*)&(ans->signature));
+    signMessage((const unsigned char*)ans, offsetof(Ask_All_Info, signature), (unsigned char*)&(ans->signature));
 }
 
 pair <char*, int> Handle_Answer_All_Info_Create(NodeDetails* whoAsked)
 {
     //initialize pointer
-    Answer_All_Info_15* m = (Answer_All_Info_15*)malloc(Maximum_Message_Size);
+    Answer_All_Info* m = (Answer_All_Info*)malloc(Maximum_Message_Size);
 
     //check if the memory allocation worked
     if (m == nullptr)
@@ -390,5 +395,5 @@ pair <char*, int> Handle_Answer_All_Info_Create(NodeDetails* whoAsked)
     copy(whoAsked, (NodeDetails*)((char*)whoAsked + sizeof(NodeDetails)), &m->ReceiverDetails);
     m->isLast = false;
 
-    return { (char*)m, (int)sizeof(Answer_All_Info_15) };
+    return { (char*)m, (int)sizeof(Answer_All_Info) };
 }

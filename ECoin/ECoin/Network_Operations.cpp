@@ -65,9 +65,9 @@ void MonitorAfterPing()
                 removeNodeFromTreeInd(nodeNow.first.nodeID, 0);
 
                 //ping the user again after deleting him
-                Ask_Ping_4* message = new Ask_Ping_4{};
+                Ask_Ping* message = new Ask_Ping{};
                 Handle_Ask_Ping_Create(&(nodeNow.first), message);
-                sendMessage((char*)message, sizeof(Ask_Ping_4), nodeNow.first.ip, nodeNow.first.port);
+                sendMessage((char*)message, sizeof(Ask_Ping), nodeNow.first.ip, nodeNow.first.port);
             }
             else
             {
@@ -143,9 +143,9 @@ void MonitorBeforePing()
             if (nodeNow.second - Time_To_Ping == getLastTime(&(nodeNow.first)))
             {
                 //sends the ping message
-                Ask_Ping_4* message = new Ask_Ping_4{};
+                Ask_Ping* message = new Ask_Ping{};
                 Handle_Ask_Ping_Create(&(nodeNow.first), message);
-                sendMessage((char*)message, sizeof(Ask_Ping_4), nodeNow.first.ip, nodeNow.first.port);
+                sendMessage((char*)message, sizeof(Ask_Ping), nodeNow.first.ip, nodeNow.first.port);
 
                 //adds the node to the queue of pinged nodes
                 canChangePingedQueue.lock();
@@ -168,7 +168,7 @@ chrono::milliseconds timeToWaitForResponse(Response_Time);
 bool connectToBootnode(bool isBootnode)
 {
     //connects to the bootnode and gets the external ip and port
-    Connect_0* message = new Connect_0{};
+    Connect* message = new Connect{};
     for (int a = 0; a < Tries_For_Each_Bootnode; a++)
         for (int b = 0; b < Number_Of_Bootnodes; b++)
         {
@@ -179,7 +179,7 @@ bool connectToBootnode(bool isBootnode)
 
             //send a message to try to connect
             Handle_Connect_Create(message);
-            if (!sendMessage((char*)message, sizeof(Connect_0), Bootnode_Details[b].ip, Bootnode_Details[b].port))
+            if (!sendMessage((char*)message, sizeof(Connect), Bootnode_Details[b].ip, Bootnode_Details[b].port))
                 continue;
 
             //receive the message
@@ -208,7 +208,7 @@ void getClosest(char target[32], int triesImprove, NodeDetails* answer = NULL)
         closestBefore[a].port = 0;
     }
     fillListInd(Bucket_Size, target, closestNow, 0);
-    Ask_Close_2* ans = new Ask_Close_2{};
+    Ask_Close* ans = new Ask_Close{};
 
     //adds details about the thread running
     Communication_With_Threads threadDetails;
@@ -249,7 +249,7 @@ void getClosest(char target[32], int triesImprove, NodeDetails* answer = NULL)
                 //sends a message to the node
                 numMessagesSent++;
                 Handle_Ask_Close_Create(target, ans);
-                sendMessage((char*)ans, sizeof(Ask_Close_2), closestNow[a].ip, closestNow[a].port);
+                sendMessage((char*)ans, sizeof(Ask_Close), closestNow[a].ip, closestNow[a].port);
             }
         }
         swap(closestBefore, closestNow);
@@ -343,9 +343,9 @@ void spreadRandomNumbers(unsigned long long timeStartRandom, unsigned long long 
         this_thread::sleep_for(chrono::milliseconds((Time_Block / 3) - Get_Time() % (Time_Block / 3)));
 
         //create reveal message spread it and process it
-        Reveal_11* message = new Reveal_11{};
+        Reveal* message = new Reveal{};
         Handle_Reveal_Create(&revealNumbers[indexLastReveal][0], hashOfContract, message);
-        handleMessage((char*)message, sizeof(Reveal_11));
+        handleMessage((char*)message, sizeof(Reveal));
         indexLastReveal--;
 
         //wait until it is time to try to be the next block creator
@@ -354,29 +354,41 @@ void spreadRandomNumbers(unsigned long long timeStartRandom, unsigned long long 
         //try to be the next block creator
         tryCreateNextBlock();
     }
-    this_thread::sleep_for(chrono::milliseconds(Max_Size_Block_Tree * Time_Block));
+
+    //sleep until no help is needed from this random staking pool operator in approving blocks
+    while (lastTimeApproved < timeEndRandom)
+        this_thread::sleep_for(chrono::milliseconds(2000));
+
     hasContract = false;
+    Is_Staking_Pool_Operator = false;
 }
 
-void handleStakingPoolOperator(unsigned long long timeEnd)
+void handleStakingPoolOperator(unsigned long long timeStart, unsigned long long timeEnd)
 {
+    //sleep until the start of the contract
+    if (Get_Time() < timeStart)
+        this_thread::sleep_for(chrono::milliseconds(timeStart - Get_Time()));
+
     //wait until the user is not a staking pool operator
     while (Get_Time() < timeEnd)
     {
         //wait until it is time to try to be the next block creator
-        unsigned long long timeSleep = Get_Time() + Time_Block;
-        timeSleep -= timeSleep % Time_Block;
-        this_thread::sleep_for(chrono::milliseconds(timeSleep));
+        this_thread::sleep_for(chrono::milliseconds(Time_Block - Get_Time() % Time_Block));
 
         //try to be the next block creator
         tryCreateNextBlock();
     }
-    this_thread::sleep_for(chrono::milliseconds(Max_Size_Block_Tree * Time_Block));
+
+    //sleep until no help is needed from this staking pool operator in approving blocks
+    while (lastTimeApproved < timeEnd)
+        this_thread::sleep_for(chrono::milliseconds(2000));
+
     hasContract = false;
+    Is_Staking_Pool_Operator = false;
 }
 
 pair <char*, int> messageNow;
-Answer_All_Info_15* m;
+Answer_All_Info* m;
 char* copyHere;
 
 void initializeSendAllData(NodeDetails* whoAsked)
@@ -384,9 +396,10 @@ void initializeSendAllData(NodeDetails* whoAsked)
     //initializes the place to copy the data until it is sent
     messageNow = Handle_Answer_All_Info_Create(whoAsked);
     copyHere = messageNow.first + messageNow.second;
-    m = (Answer_All_Info_15*)messageNow.first;
+    m = (Answer_All_Info*)messageNow.first;
     m->howmanyEachType[0] = 0;
     m->howmanyEachType[1] = 0;
+    m->howmanyEachType[2] = 0;
 }
 
 void copyDataToMessage(char* copyFrom, int copyAmount, int indexAdd)
@@ -398,7 +411,7 @@ void copyDataToMessage(char* copyFrom, int copyAmount, int indexAdd)
     messageNow.second += copyAmount;
 
     //check if the message is too long
-    if (messageNow.second + 150 > Maximum_Message_Size)
+    if (messageNow.second + 250 > Maximum_Message_Size)
     {
         signMessage((const unsigned char*)messageNow.first, messageNow.second, (unsigned char*)copyHere);
         sendMessage(messageNow.first, messageNow.second + 64, m->ReceiverDetails.ip, m->ReceiverDetails.port);
@@ -406,7 +419,8 @@ void copyDataToMessage(char* copyFrom, int copyAmount, int indexAdd)
         //initialize variables for the next message
         m->howmanyEachType[0] = 0;
         m->howmanyEachType[1] = 0;
-        messageNow.second = sizeof(Answer_All_Info_15);
+        m->howmanyEachType[2] = 0;
+        messageNow.second = sizeof(Answer_All_Info);
         copyHere = messageNow.first + messageNow.second;
     }
 }
@@ -414,7 +428,7 @@ void copyDataToMessage(char* copyFrom, int copyAmount, int indexAdd)
 void endSendAllData()
 {
     //sends a message that ends 
-    Answer_All_Info_15* m = (Answer_All_Info_15*)messageNow.first;
+    Answer_All_Info* m = (Answer_All_Info*)messageNow.first;
     m->isLast = true;
     signMessage((const unsigned char*)messageNow.first, messageNow.second, (unsigned char*)copyHere);
     sendMessage(messageNow.first, messageNow.second + 64, m->ReceiverDetails.ip, m->ReceiverDetails.port);

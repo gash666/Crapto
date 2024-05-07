@@ -79,11 +79,17 @@ extern unsigned long long lastTimeReceivedRandom;
 //mutex for using some actions on the block tree
 extern mutex canUseBlockTreeActions;
 
+//mutex for receiving reveal random numbers
+extern mutex canReceiveRandom;
+
 //saves if the user is a bootnode and the first one to connect
 extern bool isFirstAll;
 
 //saves if the user has the needed info to check if blocks are valid
 extern bool hasInfo;
+
+//saves the last time that a block was approved
+extern unsigned long long lastTimeApproved;
 
 //the last block number to be approved
 extern unsigned long long blockNumberApproved;

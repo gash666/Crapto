@@ -19,12 +19,12 @@ void Handle_Connect_Process(char* message, int len)
 {
 	//answers the request to get the ip and port
 	//checks if the message is of the correct size
-	if (!Is_Bootnode or len != sizeof(Connect_0))
+	if (!Is_Bootnode or len != sizeof(Connect))
 		return;
 
 	//checks that the signature on the message is correct
-	Connect_0* m = (Connect_0*) message;
-	bool isGood = verifySignature((const unsigned char*)m, offsetof(Connect_0, signature), (const unsigned char*)&(m->nodeId), (const unsigned char*)&(m->signature));
+	Connect* m = (Connect*) message;
+	bool isGood = verifySignature((const unsigned char*)m, offsetof(Connect, signature), (const unsigned char*)&(m->nodeId), (const unsigned char*)&(m->signature));
 	if (!isGood)
 	{
 		cout << "Process_Message.cpp Handle_Connect_Process error signature is not correct" << '\n';
@@ -32,25 +32,25 @@ void Handle_Connect_Process(char* message, int len)
 	}
 
 	//creates an answer to the request
-	Answer_Connect_1* returnMessage = new Answer_Connect_1{};
+	Answer_Connect* returnMessage = new Answer_Connect{};
 	Handle_Answer_Connect_Create(m->nodeId, returnMessage);
 	pair <string, int> address = getAddress();
 
 	Update_Ping_Timer(&returnMessage->answerIdentity);
 
 	//sends the answer message
-	sendMessage((char*)returnMessage, sizeof(Answer_Connect_1), (char*)address.first.c_str(), address.second, true);
+	sendMessage((char*)returnMessage, sizeof(Answer_Connect), (char*)address.first.c_str(), address.second, true);
 }
 
 void Handle_Answer_Connect_Process(char* message, int len)
 {
 	//handles the answer to a connect message that returns the port and ip
-	if (len != sizeof(Answer_Connect_1))
+	if (len != sizeof(Answer_Connect))
 		return;
 
 	//check if the signature is ok
-	Answer_Connect_1* m = (Answer_Connect_1*) message;
-	bool isGood = verifySignature((const unsigned char*)m, offsetof(Answer_Connect_1, signature), (const unsigned char*)&(m->senderDetails.nodeID), (const unsigned char*)&(m->signature));
+	Answer_Connect* m = (Answer_Connect*) message;
+	bool isGood = verifySignature((const unsigned char*)m, offsetof(Answer_Connect, signature), (const unsigned char*)&(m->senderDetails.nodeID), (const unsigned char*)&(m->signature));
 	if (!isGood)
 	{
 		cout << "Process_Message.cpp Handle_Answer_Connect_Process error signature is not correct" << '\n';
@@ -59,16 +59,14 @@ void Handle_Answer_Connect_Process(char* message, int len)
 
 	//check if the message is from one of the bootnodes
 	bool isReal = false;
-	//for (int a = 0; a < Number_Of_Bootnodes; a++)
-	//	for (int b = 0; b < 32; b++)
-	//		if (Bootnode_Details[a].nodeId[b] == m->nodeId[b])
-				isReal = true;
+	for (int a = 0; a < Number_Of_Bootnodes; a++)
+		if (memcmp(&Bootnode_Details[a], &m->senderDetails, sizeof(NodeDetails)) == 0)
+			isReal = true;
+	if (!isReal)
+		return;
 
 	//check that the destination is the user
-	for (int a = 0; a < 32; a++)
-		if (My_Details.nodeID[a] != m->answerIdentity.nodeID[a])
-			isReal = false;
-	if (!isReal)
+	if (memcmp(&My_Details, &m->answerIdentity, sizeof(NodeDetails)) != 0)
 		return;
 
 	Update_Ping_Timer(&m->senderDetails);
@@ -81,12 +79,12 @@ void Handle_Answer_Connect_Process(char* message, int len)
 void Handle_Ask_Close_Process(char* message, int len)
 {
 	//answer the request to get the closest to some id
-	if (len != sizeof(Ask_Close_2))
+	if (len != sizeof(Ask_Close))
 		return;
 
 	//check if the signature is ok
-	Ask_Close_2* m = (Ask_Close_2*) message;
-	bool isGood = verifySignature((const unsigned char*)m, offsetof(Ask_Close_2, signature), (const unsigned char*)&(m->senderDetails.nodeID), (const unsigned char*)&(m->signature));
+	Ask_Close* m = (Ask_Close*) message;
+	bool isGood = verifySignature((const unsigned char*)m, offsetof(Ask_Close, signature), (const unsigned char*)&(m->senderDetails.nodeID), (const unsigned char*)&(m->signature));
 	if (!isGood)
 	{
 		cout << "Process_Message.cpp Handle_Ask_Close_Process error signature is not correct" << '\n';
@@ -96,20 +94,20 @@ void Handle_Ask_Close_Process(char* message, int len)
 	Update_Ping_Timer(&m->senderDetails);
 
 	//sends an answer to the message
-	Answer_Close_3* returnMessage = new Answer_Close_3{};
+	Answer_Close* returnMessage = new Answer_Close{};
 	Handle_Answer_Close_Create(m->target, returnMessage);
-	sendMessage((char*)returnMessage, sizeof(Answer_Close_3), m->senderDetails.ip, m->senderDetails.port);
+	sendMessage((char*)returnMessage, sizeof(Answer_Close), m->senderDetails.ip, m->senderDetails.port);
 }
 
 void Handle_Answer_Close_Process(char* message, int len)
 {
 	//answer the request to get the closest to some id
-	if (len != sizeof(Answer_Close_3))
+	if (len != sizeof(Answer_Close))
 		return;
 
 	//check if the signature is ok
-	Answer_Close_3* m = (Answer_Close_3*) message;
-	bool isGood = verifySignature((const unsigned char*)m, offsetof(Answer_Close_3, signature), (const unsigned char*)&(m->senderDetails.nodeID), (const unsigned char*)&(m->signature));
+	Answer_Close* m = (Answer_Close*) message;
+	bool isGood = verifySignature((const unsigned char*)m, offsetof(Answer_Close, signature), (const unsigned char*)&(m->senderDetails.nodeID), (const unsigned char*)&(m->signature));
 	if (!isGood)
 	{
 		cout << "Process_Message.cpp Handle_Answer_Close_Process error signature is not correct" << '\n';
@@ -154,12 +152,12 @@ void Handle_Answer_Close_Process(char* message, int len)
 void Handle_Ask_Ping_Process(char* message, int len)
 {
 	//answer the ping
-	if (len != sizeof(Ask_Ping_4))
+	if (len != sizeof(Ask_Ping))
 		return;
 
 	//check if the signature is ok
-	Ask_Ping_4* m = (Ask_Ping_4*) message;
-	bool isGood = verifySignature((const unsigned char*)m, offsetof(Ask_Ping_4, signature), (const unsigned char*)&(m->senderDetails.nodeID), (const unsigned char*)&(m->signature));
+	Ask_Ping* m = (Ask_Ping*) message;
+	bool isGood = verifySignature((const unsigned char*)m, offsetof(Ask_Ping, signature), (const unsigned char*)&(m->senderDetails.nodeID), (const unsigned char*)&(m->signature));
 	if (!isGood)
 	{
 		cout << "Process_Message.cpp Handle_Ask_Ping_Process error signature is not correct" << '\n';
@@ -173,20 +171,20 @@ void Handle_Ask_Ping_Process(char* message, int len)
 	Update_Ping_Timer(&m->senderDetails);
 
 	//create and send an answer to the ping
-	Answer_Ping_5* returnMessage = new Answer_Ping_5{};
+	Answer_Ping* returnMessage = new Answer_Ping{};
 	Handle_Answer_Ping_Create(&m->senderDetails, returnMessage);
-	sendMessage((char*) returnMessage, sizeof(Answer_Ping_5), returnMessage->receiverDetails.ip, returnMessage->receiverDetails.port);
+	sendMessage((char*) returnMessage, sizeof(Answer_Ping), returnMessage->receiverDetails.ip, returnMessage->receiverDetails.port);
 }
 
 void Handle_Answer_Ping_Process(char* message, int len)
 {
 	//update that the node is active
-	if (len != sizeof(Answer_Ping_5))
+	if (len != sizeof(Answer_Ping))
 		return;
 
 	//check if the signature is ok
-	Answer_Ping_5* m = (Answer_Ping_5*) message;
-	bool isGood = verifySignature((const unsigned char*)m, offsetof(Answer_Ping_5, signature), (const unsigned char*)&(m->senderDetails.nodeID), (const unsigned char*)&(m->signature));
+	Answer_Ping* m = (Answer_Ping*) message;
+	bool isGood = verifySignature((const unsigned char*)m, offsetof(Answer_Ping, signature), (const unsigned char*)&(m->senderDetails.nodeID), (const unsigned char*)&(m->signature));
 	if (!isGood)
 	{
 		cout << "Process_Message.cpp Handle_Answer_Ping_Process error signature is not correct" << '\n';
@@ -198,14 +196,14 @@ void Handle_Answer_Ping_Process(char* message, int len)
 void Handle_Pay_Process(char* message, int len)
 {
 	//process a payment
-	if (len != sizeof(Pay_6))
+	if (len != sizeof(Pay))
 		return;
 
 	//check if the payment is ok
-	Pay_6* m = (Pay_6*)message;
+	Pay* m = (Pay*)message;
 
 	//check if the signature is ok
-	bool isGood = verifySignature((const unsigned char*)m, offsetof(Pay_6, signature), (const unsigned char*)&(m->senderDetails.nodeID), (const unsigned char*)&(m->signature));
+	bool isGood = verifySignature((const unsigned char*)m, offsetof(Pay, signature), (const unsigned char*)&(m->senderDetails.nodeID), (const unsigned char*)&(m->signature));
 	if (!isGood)
 	{
 		cout << "Process_Message.cpp Handle_Pay_Process error signature is not correct" << '\n';
@@ -226,15 +224,27 @@ void Handle_Pay_Process(char* message, int len)
 void Handle_Block_Process(char* message, int len)
 {
 	//receives a block and processes it
-	Block_7* m = (Block_7*) message;
+	Block* m = (Block*) message;
+
+	//check that the number of payments is ok
+	if (m->HowmanyFromEachType[2] > Max_Number_Payments_Block)
+		return;
+
+	//check that the number of contracts that bind random staking pool operators is ok
+	if (m->HowmanyFromEachType[3] > Max_Number_Bind_Random_Staking_Pool_Operator_Block)
+		return;
+
+	//check that the number of contracts that bind staking pool operators is ok
+	if (m->HowmanyFromEachType[4] > Max_Number_Bind_Staking_Pool_Operator_Block)
+		return;
 
 	//check if the length of the proposed block is ok
-	if (len < sizeof(Block_7) or len != sizeof(Block_7) + 
+	if (len < sizeof(Block) or len != sizeof(Block) + 
 		m->HowmanyFromEachType[0] * sizeof(Random_Reveal) +
 		m->HowmanyFromEachType[1] * sizeof(NodeDetails) +
 		m->HowmanyFromEachType[2] * sizeof(Transaction) +
-		m->HowmanyFromEachType[3] * sizeof(Bind_Random_Staking_Pool_Operator_9) +
-		m->HowmanyFromEachType[4] * sizeof(Bind_Staking_Pool_Operator_10)  + 64)
+		m->HowmanyFromEachType[3] * sizeof(Contract_Random) +
+		m->HowmanyFromEachType[4] * sizeof(Contract) + 64)
 		return;
 
 	//check if the time of the block is in the future
@@ -269,11 +279,11 @@ void Handle_Block_Process(char* message, int len)
 		return;
 
 	//check the block number
-	if (!isHeadInitializing and m->BlockNumber != ((Block_7*)blockParent.first)->BlockNumber + 1)
+	if (!isHeadInitializing and m->BlockNumber != ((Block*)blockParent.first)->BlockNumber + 1)
 		return;
 
 	//check if the time of the proposed block is ok
-	if (!isHeadInitializing and (m->TimeAtCreation % Time_Block != 0 or m->TimeAtCreation <= ((Block_7*)blockParent.first)->TimeAtCreation))
+	if (!isHeadInitializing and (m->TimeAtCreation % Time_Block != 0 or m->TimeAtCreation <= ((Block*)blockParent.first)->TimeAtCreation))
 		return;
 
 	//check if the signature is ok
@@ -311,10 +321,17 @@ void Handle_Block_Process(char* message, int len)
 	//save the block
 	addBlock(m->SHA256OfParent, SHAOfBlock, message, len, true);
 
+	//apply the blocks before it
 	applyBlockFake(m->SHA256OfParent);
 
+	//removes staking pool operators that their contract has ended
+	unsigned long long temp = Get_Time();
+	temp -= temp % Time_Block + Time_Block;
+	deleteAllNodeIndPlace(1, 0, temp);
+	deleteAllNodeIndPlace(3, 0, temp);
+
 	//initialize pointer
-	char* tempPointer = message + sizeof(Block_7);
+	char* tempPointer = message + sizeof(Block);
 
 	//initialize variable
 	char xorOfAll[32]{ 0 };
@@ -352,7 +369,20 @@ void Handle_Block_Process(char* message, int len)
 			reversePath(m->SHA256OfParent);
 			return;
 		}
+
+		//check if this was already revealed in this block
+		if (isAlreadyIn(((NodeDetails*)tempPointer)->nodeID, 1))
+		{
+			reversePath(m->SHA256OfParent);
+			return;
+		}
+
+		//adds the pay message to the queue and map
+		addMessageInd(((NodeDetails*)tempPointer)->nodeID, Get_Time(), 1);
 	}
+
+	//remove the staking pool operators that revealed from the queue and map
+	reset(1);
 
 	//check if the new amount of money of the staking pool operator is correct
 	if (getAmountOfMoneyInd(&m->BlockCreator, 1) + Number_Coins_Per_Block != m->newAmountCreator)
@@ -376,6 +406,17 @@ void Handle_Block_Process(char* message, int len)
 			return;
 		}
 
+		//check if this random staking pool operator was already punished in this block
+		if (isAlreadyIn(((NodeDetails*)tempPointer)->nodeID, 1))
+		{
+			ReverseBlockUntil(message, len, { 1, a });
+			reversePath(m->SHA256OfParent);
+			return;
+		}
+
+		//adds the pay message to the queue and map
+		addMessageInd(((NodeDetails*)tempPointer)->nodeID, Get_Time(), 1);
+
 		//update to the new amount of money
 		unsigned long long amountOfMoney = getAmountOfMoneyInd((NodeDetails*)tempPointer, 1) - Punishment_Not_Reveal;
 
@@ -386,6 +427,9 @@ void Handle_Block_Process(char* message, int len)
 		//set the new amount of money for the random staking pool operator
 		setAmountMoneyInd((NodeDetails*)tempPointer, amountOfMoney, 1);
 	}
+
+	//remove the punished staking pool operators from the queue and map
+	reset(1);
 
 	//check the payments in the block
 	for (int a = 0; a < m->HowmanyFromEachType[2]; a++, tempPointer += sizeof(Transaction))
@@ -401,18 +445,20 @@ void Handle_Block_Process(char* message, int len)
 	reset(1);
 	
 	//check the Bind_Random_Staking_Pool_Operator in the block
-	for (int a = 0; a < m->HowmanyFromEachType[3]; a++, tempPointer += sizeof(Bind_Random_Staking_Pool_Operator_9))
-		if (checkBindRandomStakingPoolOperator((Bind_Random_Staking_Pool_Operator_9*)tempPointer, m->TimeAtCreation) != 2)
+	for (int a = 0; a < m->HowmanyFromEachType[3]; a++, tempPointer += sizeof(Contract_Random))
+	{
+		if (checkBindRandomStakingPoolOperator((Contract_Random*)tempPointer, m->TimeAtCreation) != 2)
 		{
 			//the block is wrong - reverse the actions taken so far
 			ReverseBlockUntil(message, len, { -1, -1 });
 			reversePath(m->SHA256OfParent);
 			return;
 		}
+	}
 
 	//check the Bind_Staking_Pool_Operator in the block
-	for (int a = 0; a < m->HowmanyFromEachType[4]; a++, tempPointer += sizeof(Bind_Staking_Pool_Operator_10))
-		if (checkBindStakingPoolOperator((Bind_Staking_Pool_Operator_10*) tempPointer, m->TimeAtCreation) != 2)
+	for (int a = 0; a < m->HowmanyFromEachType[4]; a++, tempPointer += sizeof(Contract))
+		if (checkBindStakingPoolOperator((Contract*) tempPointer, m->TimeAtCreation) != 2)
 		{
 			//the block is wrong - reverse the actions taken so far
 			ReverseBlockUntil(message, len, { -1, -1 });
@@ -420,13 +466,8 @@ void Handle_Block_Process(char* message, int len)
 			return;
 		}
 
-	//send confirm message for the block on its hash value
-	if (Is_Staking_Pool_Operator and shouldSignBlock(SHAOfBlock))
-	{
-		Confirm_Block_12* ans = new Confirm_Block_12{};
-		Handle_Confirm_Block_Create(SHAOfBlock, ans);
-		sendMessage((char*)ans, sizeof(Confirm_Block_12), m->BlockCreator.ip, m->BlockCreator.port);
-	}
+	//sends a confirmation message or starts the confirmation process if needed
+	shouldSignBlock(SHAOfBlock);
 
 	//revese the actions done while creating this block
 	ReverseBlockUntil(message, len, { -1, -1 });
@@ -436,30 +477,24 @@ void Handle_Block_Process(char* message, int len)
 	spreadMessage(message, len);
 }
 
-void Handle_Contract_Process(char* message, int len)
-{
-	//receives a contract between a user and a staking pool operator and proceses it
-
-}
-
 void Handle_Bind_Random_Staking_Pool_Operator_Process(char* message, int len)
 {
 	//processes a message that binds a user to be a random staking pool operator
-	if (len != sizeof(Bind_Random_Staking_Pool_Operator_9))
+	if (len != sizeof(Bind_Random_Staking_Pool_Operator))
 		return;
 
 	//check if the Bind_Random_Staking_Pool_Operator is ok
-	Bind_Random_Staking_Pool_Operator_9* m = (Bind_Random_Staking_Pool_Operator_9*) message;
+	Bind_Random_Staking_Pool_Operator* m = (Bind_Random_Staking_Pool_Operator*) message;
 
 	//check if the signature is ok
-	if (!verifySignature((const unsigned char*)m, offsetof(Bind_Random_Staking_Pool_Operator_9, signature), (const unsigned char*)&(m->newStakingPoolOperator.nodeID), (const unsigned char*)&(m->signature)))
+	if (!verifySignature((const unsigned char*)m, offsetof(Bind_Random_Staking_Pool_Operator, signature), (const unsigned char*)&(m->newStakingPoolOperator.nodeID), (const unsigned char*)&(m->signature)))
 	{
 		cout << "Process_Message.cpp Handle_Bind_Random_Staking_Pool_Operator_Process error signature is not correct" << '\n';
 		return;
 	}
 
 	//check if the times are ok
-	if (m->startTime > Get_Time() or m->startTime > m->untilTime or m->startTime % Time_Block != 0 or m->untilTime % Time_Block != 0)
+	if ((m->startTime < Get_Time() and !isFirstAll) or m->startTime > m->untilTime or m->startTime % Time_Block != 0 or m->untilTime % Time_Block != 0)
 		return;
 
 	//checks if the message is familiar to this user
@@ -476,21 +511,21 @@ void Handle_Bind_Random_Staking_Pool_Operator_Process(char* message, int len)
 void Handle_Bind_Staking_Pool_Operator_Process(char* message, int len)
 {
 	//processes a message that binds a user to be a random staking pool operator
-	if (len != sizeof(Bind_Staking_Pool_Operator_10))
+	if (len != sizeof(Bind_Staking_Pool_Operator))
 		return;
 
 	//check if the Bind_Random_Staking_Pool_Operator is ok
-	Bind_Staking_Pool_Operator_10* m = (Bind_Staking_Pool_Operator_10*)message;
+	Bind_Staking_Pool_Operator* m = (Bind_Staking_Pool_Operator*)message;
 
 	//check if the signature is ok
-	if (!verifySignature((const unsigned char*)m, offsetof(Bind_Staking_Pool_Operator_10, signature), (const unsigned char*)&(m->newStakingPoolOperator.nodeID), (const unsigned char*)&(m->signature)))
+	if (!verifySignature((const unsigned char*)m, offsetof(Bind_Staking_Pool_Operator, signature), (const unsigned char*)&(m->newStakingPoolOperator.nodeID), (const unsigned char*)&(m->signature)))
 	{
 		cout << "Process_Message.cpp Handle_Bind_Staking_Pool_Operator_Process error signature is not correct" << '\n';
 		return;
 	}
 
 	//check if the times are ok
-	if (m->startTime > Get_Time() or m->startTime > m->untilTime or m->startTime % Time_Block != 0 or m->untilTime % Time_Block != 0)
+	if (m->startTime < Get_Time() or m->startTime > m->untilTime or m->startTime % Time_Block != 0 or m->untilTime % Time_Block != 0)
 		return;
 
 	//checks if the message is familiar to this user
@@ -507,12 +542,12 @@ void Handle_Bind_Staking_Pool_Operator_Process(char* message, int len)
 void Handle_Reveal_Process(char* message, int len)
 {
 	//processes a message that contains a revealed random number
-	if (len != sizeof(Reveal_11))
+	if (len != sizeof(Reveal))
 		return;
 
 	//check if the signature is ok
-	Reveal_11* m = (Reveal_11*) message;
-	bool isGood = verifySignature((const unsigned char*)m, offsetof(Reveal_11, signature), (const unsigned char*)&(m->senderDetails.nodeID), (const unsigned char*)&(m->signature));
+	Reveal* m = (Reveal*) message;
+	bool isGood = verifySignature((const unsigned char*)m, offsetof(Reveal, signature), (const unsigned char*)&(m->senderDetails.nodeID), (const unsigned char*)&(m->signature));
 	if (!isGood)
 	{
 		cout << "Process_Message.cpp Handle_Reveal_Process error signature is not correct" << '\n';
@@ -532,8 +567,11 @@ void Handle_Reveal_Process(char* message, int len)
 		return;
 
 	//check if the revealed value is correct and apply it
-	if (!checkRandomReveal(&m->senderDetails, m->randomValue, m->timeWhenSend, m->HashOfContract))
+	if (Is_Staking_Pool_Operator and !checkRandomReveal(&m->senderDetails, m->randomValue, m->timeWhenSend, m->HashOfContract))
+	{
+		cout << "problem with receiving random number" << '\n';
 		return;
+	}
 
 	//add the message to the messages known to the user
 	addMessageInd(message, Get_Time(), 4);
@@ -545,7 +583,7 @@ void Handle_Reveal_Process(char* message, int len)
 void Handle_Confirm_Block_Process(char* message, int len)
 {
 	//processes a message that confirms the current proposed block by one user
-	if (len != sizeof(Confirm_Block_12))
+	if (len != sizeof(Confirm_Block))
 		return;
 
 	//check if the user is creating a block
@@ -553,8 +591,8 @@ void Handle_Confirm_Block_Process(char* message, int len)
 		return;
 
 	//check if the signature is ok
-	Confirm_Block_12* m = (Confirm_Block_12*)&(message[0]);
-	bool isGood = verifySignature((const unsigned char*)m, offsetof(Confirm_Block_12, signature), (const unsigned char*)&(m->senderDetails.nodeID), (const unsigned char*)&(m->signature));
+	Confirm_Block* m = (Confirm_Block*)message;
+	bool isGood = verifySignature((const unsigned char*)m, offsetof(Confirm_Block, signature), (const unsigned char*)&(m->senderDetails.nodeID), (const unsigned char*)&(m->signature));
 	if (!isGood)
 	{
 		cout << "Process_Message.cpp Handle_Confirm_Block_Process error signature is not correct" << '\n';
@@ -562,7 +600,7 @@ void Handle_Confirm_Block_Process(char* message, int len)
 	}
 
 	//check if the user has enough money to sign on the block
-	if (getAmountOfMoneyInd(&m->senderDetails, 1) < Min_Coins_Staking_Pool_Operator)
+	if (!isFirstAll and getAmountOfMoneyInd(&m->senderDetails, 1) < Min_Coins_Staking_Pool_Operator)
 		return;
 
 	//check if the signature on the created block is ok
@@ -585,14 +623,14 @@ void Handle_Confirm_Block_Process(char* message, int len)
 bool Handle_Confirm_Block_All_Process(char* message, int len)
 {
 	//processes a message that confirms that the current proposed block is valid
-	Confirm_Block_All_13* m = (Confirm_Block_All_13*)message;
+	Confirm_Block_All* m = (Confirm_Block_All*)message;
 	
 	//check if the message length is ok
-	if (len < sizeof(Confirm_Block_All_13) or len != sizeof(Confirm_Block_All_13) + m->numberOfSignatures * (64 + sizeof(NodeDetails)) + 64)
+	if (len < sizeof(Confirm_Block_All) or len != sizeof(Confirm_Block_All) + m->numberOfSignatures * (64 + sizeof(NodeDetails)) + 64)
 		return false;
 
 	//check if the signature is ok
-	bool isGood = verifySignature((const unsigned char*)m, sizeof(Confirm_Block_All_13) + m->numberOfSignatures * (64 + sizeof(NodeDetails)), (const unsigned char*)&(m->senderDetails.nodeID), (const unsigned char*)(message + sizeof(Confirm_Block_All_13) + m->numberOfSignatures * (64 + sizeof(NodeDetails))));
+	bool isGood = verifySignature((const unsigned char*)m, sizeof(Confirm_Block_All) + m->numberOfSignatures * (64 + sizeof(NodeDetails)), (const unsigned char*)&(m->senderDetails.nodeID), (const unsigned char*)(message + sizeof(Confirm_Block_All) + m->numberOfSignatures * (64 + sizeof(NodeDetails))));
 	if (!isGood)
 	{
 		cout << "Process_Message.cpp Handle_Confirm_Block_All_Process error signature is not correct" << '\n';
@@ -623,7 +661,7 @@ bool Handle_Confirm_Block_All_Process(char* message, int len)
 		return false;
 
 	//check if the sender is the block creator that sent the approved block
-	if (memcmp((char*)&((Block_7*)blockDetails.first)->BlockCreator, (char*)&m->senderDetails, sizeof(NodeDetails)) != 0)
+	if (memcmp((char*)&((Block*)blockDetails.first)->BlockCreator, (char*)&m->senderDetails, sizeof(NodeDetails)) != 0)
 		return false;
 
 	//check if the block that is tried to be confirmed is the head
@@ -644,10 +682,10 @@ bool Handle_Confirm_Block_All_Process(char* message, int len)
 	for (int b = path.second - 1; b >= 1; b--)
 	{
 		//initialize variables
-		char* tempPointer = message + sizeof(Confirm_Block_All_13);
+		char* tempPointer = message + sizeof(Confirm_Block_All);
 		unsigned long long NumberCoinsSignedBlock = 0;
 		BlockTreeNode* blockNow = *(BlockTreeNode**)(path.first + b * sizeof(BlockTreeNode*));
-		Block_7* blockPointer = (Block_7*)(blockNow->startOfBlock);
+		Block* blockPointer = (Block*)(blockNow->startOfBlock);
 
 		//apply the current block
 		applyOneBlock(blockNow->startOfBlock, blockNow->sizeOfBlock);
@@ -678,7 +716,7 @@ bool Handle_Confirm_Block_All_Process(char* message, int len)
 		}
 
 		//check if the sum of staked coins that signed this block is enough
-		if (((Block_7*)blockNow->startOfBlock)->BlockNumber != 10000 and NumberCoinsSignedBlock <= getSumCoins(1) / 2)
+		if (((Block*)blockNow->startOfBlock)->BlockNumber != 10000 and NumberCoinsSignedBlock <= getSumCoins(1) / 2)
 		{
 			reversePath(blockNow->sha256OfBlock);
 			return false;
@@ -703,13 +741,13 @@ bool Handle_Confirm_Block_All_Process(char* message, int len)
 void Handle_Ask_All_Info(char* message, int len)
 {
 	//check if the message length is ok
-	if (sizeof(Ask_All_Info_14) != len)
+	if (sizeof(Ask_All_Info) != len)
 		return;
 
-	Ask_All_Info_14* m = (Ask_All_Info_14*)message;
+	Ask_All_Info* m = (Ask_All_Info*)message;
 
 	//check if the signature is ok
-	bool isGood = verifySignature((const unsigned char*)m, offsetof(Ask_All_Info_14, signature), (const unsigned char*)&(m->senderDetails.nodeID), (const unsigned char*)&(m->signature));
+	bool isGood = verifySignature((const unsigned char*)m, offsetof(Ask_All_Info, signature), (const unsigned char*)&(m->senderDetails.nodeID), (const unsigned char*)&(m->signature));
 	if (!isGood)
 	{
 		cout << "Process_Message.cpp Handle_Ask_All_Info error signature is not correct" << '\n';
@@ -722,11 +760,16 @@ void Handle_Ask_All_Info(char* message, int len)
 
 	//make sure checking this will not cause errors
 	lock_guard <mutex> lock1(canUseBlockTreeActions);
+	lock_guard <mutex> lock2(canReceiveRandom);
 
 	//send all the data about the blockchain
 	initializeSendAllData(&m->senderDetails);
 	if (m->allOrNot)
+	{
 		copyAllData(1);
+		copyInfoAnswer(0);
+		copyInfoRandom(4);
+	}
 	else
 	{
 		//give the user only data about the amount of money he has
@@ -735,8 +778,8 @@ void Handle_Ask_All_Info(char* message, int len)
 		unsigned long long tempAmount = getAmountOfMoneyInd(&m->senderDetails, 1);
 		*(unsigned long long*)& tempData[sizeof(NodeDetails)] = tempAmount;
 		copyDataToMessage(tempData, sizeof(NodeDetails) + sizeof(unsigned long long), 0);
+		copyInfoAnswer(0);
 	}
-	copyInfoAnswer(0);
 	endSendAllData();
 
 	//send the answer and all the blocks in the block tree
@@ -747,14 +790,14 @@ void Handle_Ask_All_Info(char* message, int len)
 void Handle_Answer_All_Info_Process(char* message, int len)
 {
 	//processes a message that sends information about the blockchain from the bootnode to this user
-	Answer_All_Info_15* m = (Answer_All_Info_15*)message;
+	Answer_All_Info* m = (Answer_All_Info*)message;
 
 	//check if the length is ok
 	int sizeToSkip = sizeof(NodeDetails) + sizeof(unsigned long long);
-	if (len < sizeof(Answer_All_Info_15) or len != sizeof(Answer_All_Info_15) + (int)m->howmanyEachType[0] * sizeToSkip + (int)m->howmanyEachType[1] * (sizeToSkip + sizeof(unsigned long long)) + 64)
+	if (len < sizeof(Answer_All_Info) or len != sizeof(Answer_All_Info) + (int)m->howmanyEachType[0] * sizeToSkip + (int)m->howmanyEachType[1] * sizeof(Info_Blockchain) + (int)m->howmanyEachType[2] * sizeof(Info_Random) + 64)
 		return;
 
-	int messageLength = sizeof(Answer_All_Info_15) + (int)m->howmanyEachType[0] * sizeToSkip + (int)m->howmanyEachType[1] * (sizeToSkip + sizeof(unsigned long long));
+	int messageLength = sizeof(Answer_All_Info) + (int)m->howmanyEachType[0] * sizeToSkip + (int)m->howmanyEachType[1] * sizeof(Info_Blockchain) + (int)m->howmanyEachType[2] * sizeof(Info_Random);
 
 	//check if the signature is ok
 	bool isGood = verifySignature((const unsigned char*)m, messageLength, (const unsigned char*)&(m->senderDetails.nodeID), (const unsigned char*)(message + messageLength));
@@ -769,7 +812,7 @@ void Handle_Answer_All_Info_Process(char* message, int len)
 		return;
 
 	//check if the sender of the message is a bootnode
-	bool bootnodeSent = true;//false;
+	bool bootnodeSent = false;
 	for (int a = 0; a < Number_Of_Bootnodes; a++)
 		if (memcmp(&Bootnode_Details[a], &m->senderDetails, sizeof(NodeDetails)) == 0)
 			bootnodeSent = true;
@@ -779,7 +822,7 @@ void Handle_Answer_All_Info_Process(char* message, int len)
 		return;
 
 	//initialize a pointer to the start of the data
-	char* tempPointer = message + sizeof(Answer_All_Info_15);
+	char* tempPointer = message + sizeof(Answer_All_Info);
 
 	//save the SHA256 of the head block to approve automatically
 	copy(m->shaOfHeadBlock, m->shaOfHeadBlock + 32, ShaOfHeadBlockInitializing);
@@ -788,7 +831,7 @@ void Handle_Answer_All_Info_Process(char* message, int len)
 	for (int a = 0; a < m->howmanyEachType[0]; a++, tempPointer += sizeof(Info_Blockchain) - sizeof(unsigned long long))
 	{
 		Info_Blockchain* infoNow = (Info_Blockchain*)tempPointer;
-		addNodeToTreeInd(&infoNow->identity, 1);
+		addNodeToTreeInd(&infoNow->identity, 1, true);
 		setAmountMoneyInd(&infoNow->identity, infoNow->coinsAmount, 1);
 	}
 
@@ -798,19 +841,34 @@ void Handle_Answer_All_Info_Process(char* message, int len)
 		Info_Blockchain* infoNow = (Info_Blockchain*)tempPointer;
 		addToTree(&infoNow->identity, infoNow->coinsAmount, 0, 0, NULL);
 		setVariableIndPlace(&infoNow->identity, 0, 0, infoNow->timeEnd);
-		addNodeToTreeInd(&infoNow->identity, 1);
-		setAmountMoneyInd(&infoNow->identity, infoNow->coinsAmount, 1);
+	}
+
+	//set random staking pool operators
+	for (int a = 0; a < m->howmanyEachType[2]; a++, tempPointer += sizeof(Info_Random))
+	{
+		Info_Random* infoNow = (Info_Random*)tempPointer;
+		addToTree(&infoNow->identity, 0, 2, 0, NULL);
+		setVariableIndPlace(&infoNow->identity, 2, 0, getVariableIndPlace(&infoNow->identity, 0, 0));
+		setVariableIndPlace(&infoNow->identity, 2, 1, infoNow->timeLastReveal, infoNow->lastRandomRevealed, 32);
+
+		addToTree(&infoNow->identity, 0, 4, 32, infoNow->shaOfContract);
+		setVariableIndPlace(DataCompare(&infoNow->identity, 32, infoNow->shaOfContract), 4, 0, getVariableIndPlace(&infoNow->identity, 0, 0));
+		setVariableIndPlace(DataCompare(&infoNow->identity, 32, infoNow->shaOfContract), 4, 1, infoNow->timeLastReveal, infoNow->lastRandomRevealed, 32);
 	}
 
 	//if all the information has arrived, set the amount of money of this user
 	if (m->isLast)
 	{
 		Number_Coins = getAmountOfMoneyInd(&My_Details, 1);
+		loadIntoFile();
 		hasInfo = true;
 
 		//send a cotract to become a staking pool operator if needed
 		if (hasContract)
+		{
 			sendMessageStakingPoolOperator(false);
+			Is_Staking_Pool_Operator = true;
+		}
 	}
 }
 
@@ -838,8 +896,6 @@ void handleMessage(char* message, int len)
 		Handle_Pay_Process(message, len);
 	else if (message[0] == BLOCK)
 		Handle_Block_Process(message, len);
-	else if (message[0] == CONTRACT)
-		Handle_Contract_Process(message, len);
 	else if (message[0] == BIND_RANDOM_STAKING_POOL_OPERATOR)
 		Handle_Bind_Random_Staking_Pool_Operator_Process(message, len);
 	else if (message[0] == BIND_STAKING_POOL_OPERATOR)

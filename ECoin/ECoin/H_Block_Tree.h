@@ -21,7 +21,7 @@ void makeNewRoot(char* shaOfBlock);
 pair <char*, int> getPathToNode(char* shaOfBlock);
 void addBlock(char* shaOfParent, char* shaOfBlock, char* blockStart, int blockSize, bool isGood);
 pair <char*, int> getBlock(char* shaOfBlock);
-bool shouldSignBlock(char* shaOfBlock);
+void shouldSignBlock(char* shaOfBlock);
 void setTimeApproved(unsigned long long timeBlockCreated);
 void sendBlockTree(NodeDetails* senderDetails);
 void setShaOfHead(char* placeTheAnswer);

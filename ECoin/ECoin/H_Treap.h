@@ -40,6 +40,7 @@ struct Treap_Node
 	Treap_Node(unsigned long long amountOfCoins, NodeDetails* addNewNode, unsigned int randomNumber, int sizeOfCompare, char* dataToCopy)
 	{
 		coinsAmount = amountOfCoins;
+		sumCoins = amountOfCoins;
 		copy(addNewNode, (NodeDetails*)((char*)addNewNode + sizeof(NodeDetails)), &valueHere);
 		compareWithOthers = DataCompare(&valueHere, sizeOfCompare, dataToCopy);
 		yValue = randomNumber;
@@ -60,23 +61,22 @@ struct Treap_Node
 //variables[2] - / the time the random reveal arrived
 
 void initTreap();
-void addToTree(NodeDetails* addNewNode, unsigned long long amountOfCoins, int ind, int sizeCompare, char* startCompare);
+void addToTree(NodeDetails* addNewNode, unsigned long long amountOfCoins, int ind, int sizeCompare, char* startCompare, bool shoudTakeMutex = true);
 void removeNode(DataCompare whoToRemove, int ind);
 void updateCoinAmount(DataCompare whoToUpdate, unsigned long long newCoinAmount, int ind);
 unsigned long long askNumberOfCoins(DataCompare whoToAskOn, int ind);
 bool isInTreapInd(DataCompare who, int ind);
 void getNextBlockCreator(char* xorAll, NodeDetails* placeTheAnswer);
 unsigned long long getVariableIndPlace(DataCompare whoToAskOn, int ind, int place, char* copyTo = NULL, int sizeToCop = 0);
-void setVariableIndPlace(DataCompare whoToChange, int ind, int place, unsigned long long value, char* copyFrom = NULL, int sizeOfVariable = 0);
+void setVariableIndPlace(DataCompare whoToChange, int ind, int place, unsigned long long value, char* copyFrom = NULL, int sizeOfVariable = 0, bool shoudTakeMutex = true);
 unsigned long long getSumCoins(int ind);
 int copyDetailsFromTreapInd(int ind, char* placeToCopy, unsigned long long time, bool isSame);
 void copyInfoAnswer(int ind);
+void copyInfoRandom(int ind);
 int getSizeTreapInd(int ind);
-void deleteAllNodeIndPlace(int ind, int place, unsigned long long value);
 void deleteTreapAll(int ind);
+void deleteAllNodeIndPlace(int ind, int place, unsigned long long value);
 void swapTreaps(int firstTreap, int secondTreap);
 void copyTreap(int copyFrom, int copyTo);
 void getXorAll(unsigned long long timeUntil, char* placeXor);
-
-
-void CallPrintDebug();
+void printDataTreap();

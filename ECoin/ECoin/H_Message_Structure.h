@@ -16,31 +16,30 @@ typedef enum : uint8_t
 	ANSWER_PING = 5, //answers a ping with a proof the user is active
 	PAY = 6, //pays another user
 	BLOCK = 7, //block on the blockchain
-	CONTRACT = 8, ////////////////////////////////////////////////////////////////////////////////////////
-	BIND_RANDOM_STAKING_POOL_OPERATOR = 9, //bind a staking pool operator that creates random numbers
-	BIND_STAKING_POOL_OPERATOR = 10, //bind a staking pool operator that doesn't creates random numbers
-	REVEAL = 11, //reveals a random number
-	CONFIRM_BLOCK = 12, //confirms a block
-	CONFIRM_BLOCK_ALL = 13, //confirms a block and makes his content valid
-	ASK_ALL_INFO = 14, //asks the bootnode for all the info about the blockchain
-	ANSWER_ALL_INFO = 15, //returns all the information about the blockchain
+	BIND_RANDOM_STAKING_POOL_OPERATOR = 8, //bind a staking pool operator that creates random numbers
+	BIND_STAKING_POOL_OPERATOR = 9, //bind a staking pool operator that doesn't creates random numbers
+	REVEAL = 10, //reveals a random number
+	CONFIRM_BLOCK = 11, //confirms a block
+	CONFIRM_BLOCK_ALL = 12, //confirms a block and makes his content valid
+	ASK_ALL_INFO = 13, //asks the bootnode for all the info about the blockchain
+	ANSWER_ALL_INFO = 14, //returns all the information about the blockchain
 	DONT_EXIST = 255
 } id_t;
 
 void handleMessage(char* message, int len);
 
 //message that asks for its ip and port, id is 0
-struct Connect_0
+struct Connect
 {
 	id_t messageId;
 	unsigned long long messageNumber;
 	char nodeId[32];
 	char signature[64];
 };
-void Handle_Connect_Create(Connect_0* ans);
+void Handle_Connect_Create(Connect* ans);
 
 //message that answers to Connect_0, id is 1
-struct Answer_Connect_1
+struct Answer_Connect
 {
 	id_t messageId;
 	unsigned long long messageNumber;
@@ -48,10 +47,10 @@ struct Answer_Connect_1
 	NodeDetails answerIdentity;
 	char signature[64];
 };
-void Handle_Answer_Connect_Create(char* idAsk, Answer_Connect_1* ans);
+void Handle_Answer_Connect_Create(char* idAsk, Answer_Connect* ans);
 
 //message that asks about closest nodes, id is 2
-struct Ask_Close_2
+struct Ask_Close
 {
 	id_t messageId;
 	unsigned long long messageNumber;
@@ -59,10 +58,10 @@ struct Ask_Close_2
 	char target[32];
 	char signature[64];
 };
-void Handle_Ask_Close_Create(char* closeTo, Ask_Close_2* ans);
+void Handle_Ask_Close_Create(char* closeTo, Ask_Close* ans);
 
 //message that returns an answer to who are the close neighbors, id is 3
-struct Answer_Close_3
+struct Answer_Close
 {
 	id_t messageId;
 	unsigned long long messageNumber;
@@ -72,10 +71,10 @@ struct Answer_Close_3
 	char target[32];
 	char signature[64];
 };
-void Handle_Answer_Close_Create(char* closeTo, Answer_Close_3* ans);
+void Handle_Answer_Close_Create(char* closeTo, Answer_Close* ans);
 
 //message that pings another user to check if he is online, id is 4
-struct Ask_Ping_4
+struct Ask_Ping
 {
 	id_t messageId;
 	unsigned long long messageNumber;
@@ -83,10 +82,10 @@ struct Ask_Ping_4
 	NodeDetails receiverDetails;
 	char signature[64];
 };
-void Handle_Ask_Ping_Create(NodeDetails* sendTo, Ask_Ping_4* ans);
+void Handle_Ask_Ping_Create(NodeDetails* sendTo, Ask_Ping* ans);
 
 //message that answers to a ping and returns that the user is online, id is 5
-struct Answer_Ping_5
+struct Answer_Ping
 {
 	id_t messageId;
 	unsigned long long messageNumber;
@@ -94,10 +93,10 @@ struct Answer_Ping_5
 	NodeDetails receiverDetails;
 	char signature[64];
 };
-void Handle_Answer_Ping_Create(NodeDetails* sendTo, Answer_Ping_5* ans);
+void Handle_Answer_Ping_Create(NodeDetails* sendTo, Answer_Ping* ans);
 
 //message that starts a payment, id is 6
-struct Pay_6
+struct Pay
 {
 	id_t messageId;
 	unsigned long long messageNumber;
@@ -107,18 +106,18 @@ struct Pay_6
 	unsigned long long amountToPay;
 	char signature[64];
 };
-void Handle_Pay_Create(NodeDetails* payTo, unsigned long long amountPay, Pay_6* ans);
+void Handle_Pay_Create(NodeDetails* payTo, unsigned long long amountPay, Pay* ans);
 
 //the structure of a transaction on the blockchain
 struct Transaction
 {
-	Pay_6 payMessage;
+	Pay payMessage;
 	unsigned long long newAmountSender;
 	unsigned long long newAmountReceiver;
 };
 
 //the structure of the start of a block
-struct Block_7
+struct Block
 {
 	id_t messageId;
 	char SHA256OfParent[32];
@@ -137,7 +136,7 @@ struct Block_7
 pair <char*, int> Handle_Block_Create(char* shaOfParent, unsigned long long blockNumber);
 
 //the structure of the constract that binds a user as a staking pool operator that generates random numbers
-struct Bind_Random_Staking_Pool_Operator_9
+struct Bind_Random_Staking_Pool_Operator
 {
 	id_t messageId;
 	unsigned long long startTime;
@@ -146,16 +145,16 @@ struct Bind_Random_Staking_Pool_Operator_9
 	NodeDetails newStakingPoolOperator;
 	char signature[64];
 };
-void Handle_Bind_Random_Staking_Pool_Operator_Create(char* randomVal, unsigned long long timeStart, unsigned long long timeEnd, Bind_Random_Staking_Pool_Operator_9* ans);
+void Handle_Bind_Random_Staking_Pool_Operator_Create(char* randomVal, unsigned long long timeStart, unsigned long long timeEnd, Bind_Random_Staking_Pool_Operator* ans);
 
 struct Contract_Random
 {
-	Bind_Random_Staking_Pool_Operator_9 contract;
+	Bind_Random_Staking_Pool_Operator contract;
 	unsigned long long amountOfMoney;
 };
 
 //the structure of the constract that binds a user as a staking pool operator
-struct Bind_Staking_Pool_Operator_10
+struct Bind_Staking_Pool_Operator
 {
 	id_t messageId;
 	unsigned long long startTime;
@@ -163,16 +162,16 @@ struct Bind_Staking_Pool_Operator_10
 	NodeDetails newStakingPoolOperator;
 	char signature[64];
 };
-void Handle_Bind_Staking_Pool_Operator_Create(unsigned long long timeStart, unsigned long long timeEnd, Bind_Staking_Pool_Operator_10* ans);
+void Handle_Bind_Staking_Pool_Operator_Create(unsigned long long timeStart, unsigned long long timeEnd, Bind_Staking_Pool_Operator* ans);
 
 struct Contract
 {
-	Bind_Staking_Pool_Operator_10 contract;
+	Bind_Staking_Pool_Operator contract;
 	unsigned long long amountOfMoney;
 };
 
 //the struct of a message that reveals a random number to determine the next block creator
-struct Reveal_11
+struct Reveal
 {
 	id_t messageId;
 	unsigned long long timeWhenSend;
@@ -181,7 +180,7 @@ struct Reveal_11
 	char randomValue[32];
 	char signature[64];
 };
-void Handle_Reveal_Create(char* randomVal, char* hashOfContract, Reveal_11* ans);
+void Handle_Reveal_Create(char* randomVal, char* hashOfContract, Reveal* ans);
 
 struct Random_Reveal
 {
@@ -190,7 +189,7 @@ struct Random_Reveal
 };
 
 //the struct of a message that confirms the current proposed block
-struct Confirm_Block_12
+struct Confirm_Block
 {
 	id_t messageId;
 	unsigned long long messageNumber;
@@ -198,9 +197,9 @@ struct Confirm_Block_12
 	char BlockSignature[64];
 	char signature[64];
 };
-void Handle_Confirm_Block_Create(char* blockHash, Confirm_Block_12* ans);
+void Handle_Confirm_Block_Create(char* blockHash, Confirm_Block* ans);
 
-struct Confirm_Block_All_13
+struct Confirm_Block_All
 {
 	id_t messageId;
 	unsigned long long messageNumber;
@@ -213,7 +212,7 @@ struct Confirm_Block_All_13
 pair <char*, int> Handle_Confirm_Block_All_Create();
 bool Handle_Confirm_Block_All_Process(char* message, int len);
 
-struct Ask_All_Info_14
+struct Ask_All_Info
 {
 	id_t messageId;
 	unsigned long long messageNumber;
@@ -221,9 +220,9 @@ struct Ask_All_Info_14
 	NodeDetails senderDetails;
 	char signature[64];
 };
-void Handle_Ask_All_Info_Create(Ask_All_Info_14* ans, bool isAll = true);
+void Handle_Ask_All_Info_Create(Ask_All_Info* ans, bool isAll = true);
 
-struct Answer_All_Info_15
+struct Answer_All_Info
 {
 	id_t messageId;
 	unsigned long long messageNumber;
@@ -231,9 +230,10 @@ struct Answer_All_Info_15
 	NodeDetails senderDetails;
 	NodeDetails ReceiverDetails;
 	bool isLast;
-	int howmanyEachType[2];
+	int howmanyEachType[3];
 	//{ NodeDetails, unsigned long long } X howmanyEachType[0] - amounts of money
-	//{ NodeDetails, unsigned long long } X howmanyEachType[1] - staking pool operators
+	//{ NodeDetails, unsigned long long, unsigned long long } X howmanyEachType[1] - staking pool operators
+	//{ NodeDetails, unsigned long long, char[32], char[32] } X howmanyEachType[2] - random staking pool operators
 	//char signature[64]
 };
 pair <char*, int> Handle_Answer_All_Info_Create(NodeDetails* whoAsked);
@@ -243,6 +243,14 @@ struct Info_Blockchain
 	NodeDetails identity;
 	unsigned long long coinsAmount;
 	unsigned long long timeEnd;
+};
+
+struct Info_Random
+{
+	NodeDetails identity;
+	unsigned long long timeLastReveal;
+	char shaOfContract[32];
+	char lastRandomRevealed[32];
 };
 
 //a struct for communication between the main thread and other threads
@@ -267,6 +275,5 @@ void setWas(char* message, int ind, bool isSHA256 = false);
 bool getWas(char* message, int ind, bool isSHA256 = false);
 int getSizeInd(int ind);
 void reset(int ind);
-
 
 #pragma pack(pop)

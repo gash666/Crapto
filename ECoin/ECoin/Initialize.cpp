@@ -49,8 +49,10 @@ char ShaOfHeadBlockInitializing[32];
 unsigned long long lastTimeReceivedRandom = 0;
 bool isFirstRandomReceived = false;
 mutex canUseBlockTreeActions;
+mutex canReceiveRandom;
 bool isFirstAll = false;
 bool hasInfo = false;
+unsigned long long lastTimeApproved = 0;
 unsigned long long blockNumberApproved;
 
 char getFromInt(int val)
@@ -280,8 +282,15 @@ bool initValues(wstring username)
 		return false;
 
 	//initializes the values for the bootnode list
-	char tempIp[4] = { (char)127, (char)0, (char)0, (char)1 };//{ (char)77, (char)139, (char)1, (char)166 };//
-	char tempID[32] = {};
+	char tempIp[4] = { (char)77, (char)139, (char)1, (char)166 };//{ (char)127, (char)0, (char)0, (char)1 };
+	char tempID[32] = { (char)-13, (char)-109, (char)112, (char)-107, 
+		(char)-63, (char)39, (char)20, (char)-59, 
+		(char)-16, (char)-77, (char)120, (char)56, 
+		(char)40, (char)-53, (char)25, (char)-86, 
+		(char)116, (char)-29, (char)-86, (char)-19, 
+		(char)108, (char)-56, (char)-127, (char)68, 
+		(char)-7, (char)102, (char)-100, (char)-54, 
+		(char)121, (char)-57, (char)61, (char)5 };
 	if (Is_Bootnode)
 		for (int a = 0; a < 32; a++)
 			tempID[a] = My_Details.nodeID[a];
@@ -294,17 +303,17 @@ bool initValues(wstring username)
 	occupyNewTree();
 
 	//structures that save which messages were already received and helps filling blocks with actions
-	addNewMapQueue({ Time_Message_Valid, Max_Time_Spread }, sizeof(Pay_6));
+	addNewMapQueue({ Time_Message_Valid, Max_Time_Spread }, sizeof(Pay));
 	addNewMapQueue({ Time_Message_Valid, Max_Time_Spread }, 32);
-	addNewMapQueue({ Time_Message_Valid, Max_Time_Spread }, sizeof(Bind_Random_Staking_Pool_Operator_9));
-	addNewMapQueue({ Time_Message_Valid, Max_Time_Spread }, sizeof(Bind_Staking_Pool_Operator_10));
-	addNewMapQueue({ Time_Message_Valid, Max_Time_Spread }, sizeof(Reveal_11));
+	addNewMapQueue({ Time_Message_Valid, Max_Time_Spread }, sizeof(Bind_Random_Staking_Pool_Operator));
+	addNewMapQueue({ Time_Message_Valid, Max_Time_Spread }, sizeof(Bind_Staking_Pool_Operator));
+	addNewMapQueue({ Time_Message_Valid, Max_Time_Spread }, sizeof(Reveal));
 	addNewMapQueue({ Time_Message_Valid, Max_Time_Spread }, 32);
 	addNewMapQueue({ Time_Message_Valid, Max_Time_Spread }, 32);
 
 	//structures that maintain lists approved by the blockchain protocol with all the data
-	addNewMapQueue({ Infinite_Time, 0 }, sizeof(Bind_Staking_Pool_Operator_10));//staking pool operators
-	addNewMapQueue({ Infinite_Time, 0 }, sizeof(Bind_Random_Staking_Pool_Operator_9));//random staking pool operators
+	addNewMapQueue({ Infinite_Time, 0 }, sizeof(Bind_Staking_Pool_Operator));//staking pool operators
+	addNewMapQueue({ Infinite_Time, 0 }, sizeof(Bind_Random_Staking_Pool_Operator));//random staking pool operators
 
 	//adds a treap of the staking pool operators
 	initTreap();//staking pool operators
@@ -356,15 +365,16 @@ bool initValues(wstring username)
 			this_thread::sleep_for(chrono::milliseconds(Time_Block - Get_Time() % Time_Block));
 
 			//set the correct amount of money for the bootnode
-			setAmountMoneyInd(&My_Details, (unsigned long long)Bootnode_Start_Money - Number_Coins_Per_Block, 1);
+			if (Number_Coins == 0)
+				setAmountMoneyInd(&My_Details, (unsigned long long)Bootnode_Start_Money - Number_Coins_Per_Block, 1);
 
 			//make the bootnode into a random staking pool operator
 			isCreatingRandom = true;
 			hasInfo = true;
 			hasContract = true;
 			Is_Staking_Pool_Operator = true;
-			sendMessageStakingPoolOperator(true);
 			isFirstAll = true;
+			sendMessageStakingPoolOperator(true);
 		}
 	}
 

@@ -63,6 +63,14 @@ pair <Treap_Node*, Treap_Node*> split(Treap_Node* nodeNow, DataCompare splitBy, 
 		//split the left node from here
 		answer = split(nodeNow->lp, splitBy, whatToDoSame);
 		nodeNow->lp = answer.second;
+
+		//update the sum of coins
+		nodeNow->sumCoins = nodeNow->coinsAmount;
+		if (nodeNow->lp != NULL)
+			nodeNow->sumCoins += nodeNow->lp->sumCoins;
+		if (nodeNow->rp != NULL)
+			nodeNow->sumCoins += nodeNow->rp->sumCoins;
+
 		answer.second = nodeNow;
 	}
 	else
@@ -70,23 +78,17 @@ pair <Treap_Node*, Treap_Node*> split(Treap_Node* nodeNow, DataCompare splitBy, 
 		//split the right node from here
 		answer = split(nodeNow->rp, splitBy, whatToDoSame);
 		nodeNow->rp = answer.first;
+
+		//update the sum of coins
+		nodeNow->sumCoins = nodeNow->coinsAmount;
+		if (nodeNow->lp != NULL)
+			nodeNow->sumCoins += nodeNow->lp->sumCoins;
+		if (nodeNow->rp != NULL)
+			nodeNow->sumCoins += nodeNow->rp->sumCoins;
+
 		answer.first = nodeNow;
 	}
 	return answer;
-}
-
-void printCoinsDebug(Treap_Node* nodeNow)
-{
-	if (nodeNow == NULL)
-		return;
-	cout << nodeNow->coinsAmount << '\n';
-	printCoinsDebug(nodeNow->rp);
-	printCoinsDebug(nodeNow->lp);
-}
-
-void CallPrintDebug()
-{
-	printCoinsDebug(Trees[0]);
 }
 
 Treap_Node* getTreapNode(Treap_Node* nodeNow, DataCompare whoToAsk)
@@ -122,10 +124,7 @@ void changeTreapNode(Treap_Node* nodeNow, DataCompare whoToAsk, unsigned long lo
 	else if (temp < 0)
 		changeTreapNode(nodeNow->rp, whoToAsk, newCoinsAmount);//the target is to the right
 	else
-	{
-		//changes the coin amount
-		nodeNow->coinsAmount = newCoinsAmount;
-	}
+		nodeNow->coinsAmount = newCoinsAmount;//changes the coin amount
 
 	//updates the sum of coins before leaving
 	nodeNow->sumCoins = nodeNow->coinsAmount;
@@ -144,9 +143,9 @@ Treap_Node* getTreapNodeBySum(Treap_Node* nodeNow, unsigned long long sumNow)
 		lsize = nodeNow->lp->sumCoins;
 
 	//get the answer from the lower layers
-	if (nodeNow->lp != NULL and sumNow < nodeNow->lp->sumCoins)
+	if (nodeNow->lp != NULL and sumNow <= lsize)
 		return getTreapNodeBySum(nodeNow->lp, sumNow);
-	else if (sumNow < lsize + nodeNow->coinsAmount)
+	else if (sumNow <= lsize + nodeNow->coinsAmount)
 		return nodeNow;
 	else
 		return getTreapNodeBySum(nodeNow->rp, sumNow - lsize - nodeNow->coinsAmount);
@@ -230,7 +229,7 @@ int copyDetails(Treap_Node* nodeNow, unsigned long long time, bool isSame)
 	//initialize variable
 	int sum = 0;
 
-	//
+	//stopping condition
 	if (nodeNow == NULL)
 		return 0;
 
@@ -278,10 +277,11 @@ void initTreap()
 	Trees.push_back(NULL);
 }
 
-void addToTree(NodeDetails* addNewNode, unsigned long long amountOfCoins, int ind, int sizeCompare, char* startCompare)
+void addToTree(NodeDetails* addNewNode, unsigned long long amountOfCoins, int ind, int sizeCompare, char* startCompare, bool shouldTakeMutex)
 {
 	//add a node to the treap
-	lock_guard <mutex> lock(*mutexVectorTreap[ind]);
+	if (shouldTakeMutex)
+		lock_guard <mutex> lock(*mutexVectorTreap[ind]);
 
 	//creates the new treap node
 	Treap_Node* newNodeToTree = new Treap_Node(amountOfCoins, addNewNode, getRandomInt(), sizeCompare, startCompare);
@@ -350,6 +350,30 @@ bool isInTreapInd(DataCompare who, int ind)
 	return isInTreap(Trees[ind], who);
 }
 
+int numberOutNow;
+
+void printCoinsUser(Treap_Node* nodeNow)
+{
+	//check if needs to return
+	if (nodeNow == NULL)
+		return;
+
+	//print the data
+	cout << numberOutNow << ". id: ";
+	char id[64];
+	turnToASCII(id, nodeNow->valueHere.nodeID, 32);
+	for (int a = 0; a < 64; a++)
+		cout << id[a];
+	cout << " coins: " << nodeNow->coinsAmount << '\n';
+
+	//increases the counter
+	numberOutNow++;
+
+	//call the action for the lower layers
+	printCoinsUser(nodeNow->rp);
+	printCoinsUser(nodeNow->lp);
+}
+
 void getNextBlockCreator(char* xorAll, NodeDetails* placeTheAnswer)
 {
 	//returns the details of the next block creator
@@ -357,11 +381,13 @@ void getNextBlockCreator(char* xorAll, NodeDetails* placeTheAnswer)
 
 	//convert the xor value into uint256_t
 	uint256_t randomNumber = 0, temp = Trees[1]->sumCoins;
+
 	for (int a = 0; a < 32; a++)
 		randomNumber = (randomNumber << 8) | xorAll[a];
 
 	//get the next block creator and return the answer
 	unsigned long long getNumberCoins = (unsigned long long)(randomNumber % temp);
+
 	Treap_Node* nextCreator = getTreapNodeBySum(Trees[1], getNumberCoins);
 	copy(&nextCreator->valueHere, (NodeDetails*)((char*)&nextCreator->valueHere + sizeof(NodeDetails)), placeTheAnswer);
 }
@@ -373,14 +399,17 @@ unsigned long long getVariableIndPlace(DataCompare whoToAskOn, int ind, int plac
 	Treap_Node* node = getTreapNode(Trees[ind], whoToAskOn);
 	if (node == NULL)
 		return 0;
+	if (copyTo != NULL)
+		copy(node->valueOfVariable, node->valueOfVariable + sizeToCopy, copyTo);
 	return node->variables[place];
 }
 
-void setVariableIndPlace(DataCompare whoToChange, int ind, int place, unsigned long long value, char* copyFrom, int sizeOfVariable)
+void setVariableIndPlace(DataCompare whoToChange, int ind, int place, unsigned long long value, char* copyFrom, int sizeOfVariable, bool shouldTakeMutex)
 {
 	//sets the variable in a certain index and place in the array
-	//cout << "ind is: " << ind << " place is: " << place << " value is: " << value << '\n';
-	lock_guard <mutex> lock(*mutexVectorTreap[ind]);
+	if (shouldTakeMutex)
+		lock_guard <mutex> lock(*mutexVectorTreap[ind]);
+
 	Treap_Node* node = getTreapNode(Trees[ind], whoToChange);
 	if (node == NULL)
 		return;
@@ -414,10 +443,51 @@ int copyDetailsFromTreapInd(int ind, char* placeToCopy, unsigned long long time,
 	return copyDetails(Trees[ind], time, isSame);
 }
 
+void deleteTreapAll(int ind)
+{
+	//delete the treap
+	deleteTreap(Trees[ind]);
+	sizesOfTreaps[ind] = 0;
+	Trees[ind] = NULL;
+}
+
 void copyInfoAnswer(int ind)
 {
+	//copy information about all staking pool operators
 	lock_guard <mutex> lock(*mutexVectorTreap[ind]);
 	copyInfo(Trees[ind]);
+}
+
+void copyInfoRandom(Treap_Node* nodeNow)
+{
+	//copy the nodeDetails and end time of all nodes in the treap
+	//copy the info into an array
+	if (isInTreapInd(&nodeNow->valueHere, 2))
+	{
+		char dataToCopy[sizeof(Info_Random)];
+		Info_Random* temp = (Info_Random*)dataToCopy;
+		copy(&nodeNow->valueHere, (NodeDetails*)((char*)&nodeNow->valueHere + sizeof(NodeDetails)), &temp->identity);
+		temp->timeLastReveal = nodeNow->variables[1];
+		copy(nodeNow->valueOfVariable, nodeNow->valueOfVariable + 32, temp->lastRandomRevealed);
+		copy(nodeNow->compareWithOthers.dataStarts, nodeNow->compareWithOthers.dataStarts + 32, temp->shaOfContract);
+
+		//copy the data to the rest of the message
+		copyDataToMessage(dataToCopy, sizeof(Info_Random), 2);
+	}
+	
+	//get the answer from the subtree
+	if (nodeNow->lp != NULL)
+		copyInfo(nodeNow->lp);
+
+	if (nodeNow->rp != NULL)
+		copyInfo(nodeNow->rp);
+}
+
+void copyInfoRandom(int ind)
+{
+	//copy information about the random staking pool operator
+	lock_guard <mutex> lock(*mutexVectorTreap[ind]);
+	copyInfoRandom(Trees[ind]);
 }
 
 int getSizeTreapInd(int ind)
@@ -427,11 +497,14 @@ int getSizeTreapInd(int ind)
 	return sizesOfTreaps[ind];
 }
 
+mutex forUsingVector;
+
 void deleteAllNodeIndPlace(int ind, int place, unsigned long long value)
 {
 	//deletes all the nodes that their value of the specified variable is small enough
 	//get a list of all this nodes
 	(*mutexVectorTreap[ind]).lock();
+	forUsingVector.lock();
 	listOfNodes = {};
 	returnNodes(Trees[ind], value, place);
 	(*mutexVectorTreap[ind]).unlock();
@@ -440,16 +513,7 @@ void deleteAllNodeIndPlace(int ind, int place, unsigned long long value)
 	for (auto a : listOfNodes)
 		removeNode(a->compareWithOthers, ind);
 
-	sizesOfTreaps[ind] -= (unsigned int)listOfNodes.size();
-}
-
-void deleteTreapAll(int ind)
-{
-	//deletes all the nodes in a treap
-	lock_guard <mutex> lock(*mutexVectorTreap[ind]);
-	deleteTreap(Trees[ind]);
-	sizesOfTreaps[ind] = 0;
-	Trees[ind] = NULL;
+	forUsingVector.unlock();
 }
 
 vector <Treap_Node*> allNodesInTreap;
@@ -480,16 +544,27 @@ void swapTreaps(int firstTreap, int secondTreap)
 void copyTreap(int copyFrom, int copyTo)
 {
 	//copies the first treap to the second treap
-	lock_guard <mutex> lock(*mutexVectorTreap[copyFrom]);
+	lock_guard <mutex> lock1(*mutexVectorTreap[copyFrom]);
+	lock_guard <mutex> lock2(*mutexVectorTreap[copyTo]);
+
+	//delete the treap that is copied to
+	deleteTreap(Trees[copyTo]);
+	sizesOfTreaps[copyTo] = 0;
+	Trees[copyTo] = NULL;
+
 	allNodesInTreap = {};
 	getAllTreapNodes(Trees[copyFrom]);
 	
 	//add the nodes to the tree
 	for (auto a : allNodesInTreap)
 	{
-		addToTree(a->compareWithOthers.NodeId, a->coinsAmount, copyTo, a->compareWithOthers.sizeOfData, a->compareWithOthers.dataStarts);
-		for (int b = 0; b < Number_Of_Variables; b++)
-			setVariableIndPlace(&a->valueHere, copyTo, b, a->variables[b]);
+		addToTree(a->compareWithOthers.NodeId, a->coinsAmount, copyTo, a->compareWithOthers.sizeOfData, a->compareWithOthers.dataStarts, false);
+		for (int b = 1; b < Number_Of_Variables; b++)
+			setVariableIndPlace(&a->valueHere, copyTo, b, a->variables[b], NULL, 0, false);
+		if (a->isTherePlace)
+			setVariableIndPlace(&a->valueHere, copyTo, 0, a->variables[0], a->valueOfVariable, 32, false);
+		else
+			setVariableIndPlace(&a->valueHere, copyTo, 0, a->variables[0], NULL, 0, false);
 	}
 	sizesOfTreaps[copyTo] = sizesOfTreaps[copyFrom];
 	if (sizesOfTreaps[copyTo] == 0)
@@ -515,4 +590,11 @@ void getXorAll(unsigned long long timeUntil, char* placeXor)
 	//get the xor of all revealed values
 	lock_guard <mutex> lock(*mutexVectorTreap[3]);
 	calcXorAll(Trees[3], timeUntil, placeXor);
+}
+
+void printDataTreap()
+{
+	//print the data of the treap
+	numberOutNow = 1;
+	printCoinsUser(Trees[0]);
 }
