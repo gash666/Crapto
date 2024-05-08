@@ -196,7 +196,7 @@ void Node::findClose(int howmany, char* val)
 	//finds the howmany closest node ids in xor distance to *val
 	if (tsize == 0)
 	{
-		cout << "error went to 0" << '\n';
+		//cout << "error went to 0" << '\n';
 		return;
 	}
 	if (rp != NULL and lp != NULL)

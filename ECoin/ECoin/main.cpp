@@ -30,48 +30,6 @@ void runAllTheTime()
 
 int main()
 {
-    //second to show
-    /*
-    srand((unsigned int)time(NULL));
-    initTreap();
-    deque <pair <NodeDetails, unsigned long long>> inTheTree;
-    for (int a = 0; a < 300; a++)
-    {
-        NodeDetails temp;
-        for (int a = 0; a < sizeof(NodeDetails); a++)
-            ((char*)&temp)[a] = rand() % 256;
-        inTheTree.push_back({ temp, (unsigned long long)rand() });
-        addToTree(&temp, inTheTree.back().second, 0, 0, NULL);
-        updateCoinAmount(&temp, inTheTree.back().second, 0);
-    }
-    int counti = 0;
-    while (true)
-    {
-        auto answer = inTheTree.front();
-        removeNode(&inTheTree.front().first, 0);
-        inTheTree.pop_front();
-
-        NodeDetails tempi;
-        for (int a = 0; a < sizeof(NodeDetails); a++)
-            ((char*)&tempi)[a] = rand() % 256;
-        inTheTree.push_back({ tempi, (unsigned long long) rand() });
-        addToTree(&tempi, inTheTree.back().second, 0, 0, NULL);
-        updateCoinAmount(&tempi, inTheTree.back().second, 0);
-
-        int randomNum = rand() % inTheTree.size();
-        if (inTheTree[randomNum].second != askNumberOfCoins(&inTheTree[randomNum].first, 0))
-        {
-            cout << counti << '\n';
-            cout << inTheTree[randomNum].second << " " << askNumberOfCoins(&inTheTree[randomNum].first, 0) << '\n';
-            return 0;
-        }
-
-        if (counti % 100000 == 0)
-            cout << counti << '\n';
-        counti += 4;
-    }//*/
-    //*
-    //first to show
     srand((unsigned int) time(NULL));
     Is_Bootnode = false;
     wstring username;
@@ -110,5 +68,4 @@ int main()
     }
 
     closeSocket();
-    //*/
 }

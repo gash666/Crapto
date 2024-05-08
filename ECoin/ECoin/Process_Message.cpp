@@ -66,7 +66,7 @@ void Handle_Answer_Connect_Process(char* message, int len)
 		return;
 
 	//check that the destination is the user
-	if (memcmp(&My_Details, &m->answerIdentity, sizeof(NodeDetails)) != 0)
+	if (memcmp(My_Details.nodeID, m->answerIdentity.nodeID, 32) != 0)
 		return;
 
 	Update_Ping_Timer(&m->senderDetails);
@@ -859,6 +859,7 @@ void Handle_Answer_All_Info_Process(char* message, int len)
 	//if all the information has arrived, set the amount of money of this user
 	if (m->isLast)
 	{
+		//update the amount of money
 		Number_Coins = getAmountOfMoneyInd(&My_Details, 1);
 		loadIntoFile();
 		hasInfo = true;

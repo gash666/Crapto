@@ -282,8 +282,8 @@ bool initValues(wstring username)
 		return false;
 
 	//initializes the values for the bootnode list
-	char tempIp[4] = { (char)77, (char)139, (char)1, (char)166 };//{ (char)127, (char)0, (char)0, (char)1 };
-	char tempID[32] = { (char)-13, (char)-109, (char)112, (char)-107, 
+	char tempIp[4] = { (char)127, (char)0, (char)0, (char)1 };//{ (char)77, (char)139, (char)1, (char)166 };
+	char tempID[32] = {(char)-13, (char)-109, (char)112, (char)-107,
 		(char)-63, (char)39, (char)20, (char)-59, 
 		(char)-16, (char)-77, (char)120, (char)56, 
 		(char)40, (char)-53, (char)25, (char)-86, 
@@ -291,9 +291,6 @@ bool initValues(wstring username)
 		(char)108, (char)-56, (char)-127, (char)68, 
 		(char)-7, (char)102, (char)-100, (char)-54, 
 		(char)121, (char)-57, (char)61, (char)5 };
-	if (Is_Bootnode)
-		for (int a = 0; a < 32; a++)
-			tempID[a] = My_Details.nodeID[a];
 	Bootnode_Details[0].port = (unsigned short)51648;
 	memcpy(Bootnode_Details[0].ip, tempIp, 4);
 	memcpy(Bootnode_Details[0].nodeID, tempID, 32);
@@ -316,12 +313,12 @@ bool initValues(wstring username)
 	addNewMapQueue({ Infinite_Time, 0 }, sizeof(Bind_Random_Staking_Pool_Operator));//random staking pool operators
 
 	//adds a treap of the staking pool operators
-	initTreap();//staking pool operators
-	initTreap();//random taking pool operators
-	initTreap();//
-	initTreap();//
-	initTreap();//
-	initTreap();//
+	initTreap();
+	initTreap();
+	initTreap();
+	initTreap();
+	initTreap();
+	initTreap();
 
 	//monitor ping messages
 	post(ThreadPool, []() { MonitorAfterPing(); });
@@ -367,6 +364,8 @@ bool initValues(wstring username)
 			//set the correct amount of money for the bootnode
 			if (Number_Coins == 0)
 				setAmountMoneyInd(&My_Details, (unsigned long long)Bootnode_Start_Money - Number_Coins_Per_Block, 1);
+			else
+				setAmountMoneyInd(&My_Details, Number_Coins, 1);
 
 			//make the bootnode into a random staking pool operator
 			isCreatingRandom = true;

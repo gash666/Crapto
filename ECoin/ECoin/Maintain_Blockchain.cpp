@@ -40,6 +40,10 @@ int checkPayment(Transaction* paymentTransaction, unsigned long long time, bool 
 		if (paymentTransaction->payMessage.messageId != PAY)
 			return 0;
 
+		//check that the amount to pay is not 0
+		if (paymentTransaction->payMessage.amountToPay == 0)
+			return 0;
+
 		//make sure the user is not paying himself
 		if (memcmp(&paymentTransaction->payMessage.receiverDetails, &paymentTransaction->payMessage.senderDetails, sizeof(NodeDetails)) == 0)
 			return 0;
@@ -469,6 +473,7 @@ void applyBlockReal(char* shaOfBlock)
 
 	//set the amount of money for this user
 	Number_Coins = getAmountOfMoneyInd(&My_Details, 1);
+	cout << "before in here" << '\n';
 	loadIntoFile();
 	pair <char*, int> theNewHead = getBlock(shaOfBlock);
 	blockNumberApproved = ((Block*)theNewHead.first)->BlockNumber;
@@ -521,6 +526,11 @@ void tryCreateNextBlock()
 	unsigned long long timeNow = Get_Time() - Time_Block;
 	timeNow -= timeNow % Time_Block;
 	getXorAll(timeNow, nextCreator);
+
+	//checks if there is an error with receiving the random number
+	char zeroForCheck[32]{ 0 };
+	if (memcmp(zeroForCheck, nextCreator, 32) == 0)
+		cout << "Error the random number is 0" << '\n';
 
 	//get the next creator
 	NodeDetails answer;
