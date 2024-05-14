@@ -193,10 +193,10 @@ void Node::addToList()
 
 void Node::findClose(int howmany, char* val)
 {
-	//finds the howmany closest node ids in xor distance to *val
+	//finds the howmany closest node ids in xor distance to val
 	if (tsize == 0)
 	{
-		//cout << "error went to 0" << '\n';
+		cout << "error size of subtree is 0" << '\n';
 		return;
 	}
 	if (rp != NULL and lp != NULL)
@@ -227,7 +227,8 @@ void Node::findClose(int howmany, char* val)
 		lp->findClose(howmany, val);
 		return;
 	}
-	//if both way aren't possible, this is the last so add it
+
+	//if both way are blocked, this is the last so add it
 	addToList();
 }
 
@@ -666,12 +667,14 @@ unsigned long long getLastTime(NodeDetails* askAbout)
 unsigned long long getAmountOfMoneyInd(NodeDetails* askAbout, int ind)
 {
 	//return the amount of money a node has
+	lock_guard <mutex> lock(*mutexVectorNodeSupporter[ind]);
 	return trees[ind]->getAmountOfMoney(askAbout);
 }
 
 void setAmountMoneyInd(NodeDetails* changeAbout, unsigned long long AmountOfMoney, int ind)
 {
 	//set or add to the amount of money the node has
+	lock_guard <mutex> lock(*mutexVectorNodeSupporter[ind]);
 	trees[ind]->setAmountOfMoney(changeAbout, AmountOfMoney);
 }
 

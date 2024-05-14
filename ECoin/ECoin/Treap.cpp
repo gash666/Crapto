@@ -51,7 +51,6 @@ Treap_Node* merge(Treap_Node* leftNode, Treap_Node* rightNode)
 pair <Treap_Node*, Treap_Node*> split(Treap_Node* nodeNow, DataCompare splitBy, bool whatToDoSame)
 {
 	//function that splits a treap into two treaps
-	//stopping condition
 	if (nodeNow == NULL)
 		return { NULL, NULL };
 

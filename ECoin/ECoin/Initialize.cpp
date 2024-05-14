@@ -282,7 +282,7 @@ bool initValues(wstring username)
 		return false;
 
 	//initializes the values for the bootnode list
-	char tempIp[4] = { (char)127, (char)0, (char)0, (char)1 };//{ (char)77, (char)139, (char)1, (char)166 };
+	char tempIp[4] = { (char)127, (char)0, (char)0, (char)1 };//{ (char)77, (char)139, (char)1, (char)166 };//
 	char tempID[32] = {(char)-13, (char)-109, (char)112, (char)-107,
 		(char)-63, (char)39, (char)20, (char)-59, 
 		(char)-16, (char)-77, (char)120, (char)56, 
@@ -307,10 +307,6 @@ bool initValues(wstring username)
 	addNewMapQueue({ Time_Message_Valid, Max_Time_Spread }, sizeof(Reveal));
 	addNewMapQueue({ Time_Message_Valid, Max_Time_Spread }, 32);
 	addNewMapQueue({ Time_Message_Valid, Max_Time_Spread }, 32);
-
-	//structures that maintain lists approved by the blockchain protocol with all the data
-	addNewMapQueue({ Infinite_Time, 0 }, sizeof(Bind_Staking_Pool_Operator));//staking pool operators
-	addNewMapQueue({ Infinite_Time, 0 }, sizeof(Bind_Random_Staking_Pool_Operator));//random staking pool operators
 
 	//adds a treap of the staking pool operators
 	initTreap();

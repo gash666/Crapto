@@ -270,9 +270,6 @@ bool getFirstAdded(int ind, char* placeTheAnswer);
 void moveFirstLast(int ind);
 void popFrontInd(int ind, bool moveSecond = true);
 bool isAlreadyIn(char* message, int ind, bool isSHA256 = false);
-void removeFromList(char* message, int ind, bool isSHA256 = false);
-void setWas(char* message, int ind, bool isSHA256 = false);
-bool getWas(char* message, int ind, bool isSHA256 = false);
 int getSizeInd(int ind);
 void reset(int ind);
 

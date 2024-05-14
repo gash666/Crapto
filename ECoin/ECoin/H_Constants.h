@@ -88,9 +88,6 @@
 //the maximum number of payments per block
 #define Max_Number_Payments_Block 150
 
-//the start of the full structures of the blockchain
-#define Start_Queue_Map_Blockchain 8
-
 //maximum message size
 #define Maximum_Message_Size sizeof(Block) + Max_Number_Payments_Block * sizeof(Transaction) + Max_Number_Bind_Staking_Pool_Operator_Block * sizeof(Contract) + Max_Number_Bind_Random_Staking_Pool_Operator_Block * sizeof(Contract_Random) + 256 * sizeof(Random_Reveal) + 64
 

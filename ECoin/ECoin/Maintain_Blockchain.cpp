@@ -473,7 +473,6 @@ void applyBlockReal(char* shaOfBlock)
 
 	//set the amount of money for this user
 	Number_Coins = getAmountOfMoneyInd(&My_Details, 1);
-	cout << "before in here" << '\n';
 	loadIntoFile();
 	pair <char*, int> theNewHead = getBlock(shaOfBlock);
 	blockNumberApproved = ((Block*)theNewHead.first)->BlockNumber;

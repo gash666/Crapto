@@ -16,7 +16,9 @@ using namespace std;
 
 void runAllTheTime()
 {
-    chrono::milliseconds sleepNoMessageWaiting(75);
+    chrono::milliseconds sleepNoMessageWaiting(50);
+    int count = 0;
+    char tempForClear[sizeof(Reveal)];
 
     while (true)
     {
@@ -24,7 +26,18 @@ void runAllTheTime()
         if (messageLength != -1)
             handleMessage(Buffer_For_Receiving_Messages, messageLength);
         else
+        {
             this_thread::sleep_for(sleepNoMessageWaiting);
+
+            //clears old messages from memory
+            count++;
+            if (count == 400)
+            {
+                count = 0;
+                for (int a = 0; a < 7; a++)
+                    getFirstAdded(a, tempForClear);
+            }
+        }
     }
 }
 
