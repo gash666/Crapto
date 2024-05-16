@@ -529,7 +529,13 @@ void tryCreateNextBlock()
 	//checks if there is an error with receiving the random number
 	char zeroForCheck[32]{ 0 };
 	if (memcmp(zeroForCheck, nextCreator, 32) == 0)
-		cout << "Error the random number is 0" << '\n';
+	{
+		//check if the info arrived without problems
+		if (!Is_Bootnode or Number_Of_Bootnodes > 1)
+			askInformation(true);
+		else
+			cout << "Error the random number is 0" << '\n';
+	}
 
 	//get the next creator
 	NodeDetails answer;

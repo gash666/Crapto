@@ -171,7 +171,12 @@ void askInformation(bool isAll)
 	//create and send a message asking for information
 	Ask_All_Info* message = new Ask_All_Info{};
 	Handle_Ask_All_Info_Create(message, isAll);
+
+	//make sure this user is not asking himself for the info
 	int randomNumber = rand() % Number_Of_Bootnodes;
+	while (memcmp(&Bootnode_Details[randomNumber], &My_Details, sizeof(NodeDetails)) == 0)
+		randomNumber = rand() % Number_Of_Bootnodes;
+
 	sendMessage((char*)message, sizeof(Ask_All_Info), Bootnode_Details[randomNumber].ip, Bootnode_Details[randomNumber].port);
 }
 

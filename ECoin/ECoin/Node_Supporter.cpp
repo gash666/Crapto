@@ -121,8 +121,6 @@ void Tree::removeNodeFromTree(char* val)
 {
 	//remove node from the tree
 	bool remove = headOfTree->deleteNode(val);
-	if (!remove)
-		cout << "no node was removed" << '\n';
 
 	if (remove)
 	{
