@@ -58,9 +58,6 @@
 //how much time between blocks in milliseconds
 #define Time_Block 30000
 
-//maximum number of blocks in the block tree
-#define Max_Size_Block_Tree 30
-
 //amount of time that can be related to as infinite
 #define Infinite_Time 1000000000000000000
 
@@ -98,4 +95,4 @@
 #define Factor_Time_Approved_Until 80
 
 //the number of blocks need to be more deep than others to be approved
-#define Number_Deepest_Approve 1
+#define Number_Deepest_Approve 7

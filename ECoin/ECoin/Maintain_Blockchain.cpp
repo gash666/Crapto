@@ -541,14 +541,11 @@ void tryCreateNextBlock()
 	NodeDetails answer;
 	getNextBlockCreator(nextCreator, &answer);
 
-	if (memcmp(&My_Details, &answer, sizeof(NodeDetails)) == 0)
-		cout << "i am the creator!!!" << '\n';
-	else
-		cout << "i am not the creator!!!" << '\n';
-
 	//check if this user is the next creator and if it is, create it
 	if (memcmp(&My_Details, &answer, sizeof(NodeDetails)) == 0)
 	{
+		cout << "i am the block creator!!!" << '\n';
+
 		//create the new block
 		pair <char*, int> blockMessage = Handle_Block_Create(parentOfNew->sha256OfBlock, ((Block*)parentOfNew->startOfBlock)->BlockNumber + 1);
 		spreadMessage(blockMessage.first, blockMessage.second);

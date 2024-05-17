@@ -282,7 +282,7 @@ bool initValues(wstring username)
 		return false;
 
 	//initializes the values for the bootnode list
-	char tempIp[4] = { (char)77, (char)139, (char)1, (char)166 };//{ (char)127, (char)0, (char)0, (char)1 };//
+	char tempIp[4] = { (char)127, (char)0, (char)0, (char)1 };//{ (char)77, (char)139, (char)1, (char)166 };//
 	char tempID[32] = {(char)-13, (char)-109, (char)112, (char)-107,
 		(char)-63, (char)39, (char)20, (char)-59, 
 		(char)-16, (char)-77, (char)120, (char)56, 

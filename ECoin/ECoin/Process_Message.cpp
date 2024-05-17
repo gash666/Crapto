@@ -318,12 +318,17 @@ void Handle_Block_Process(char* message, int len)
 	//simulate the state before this block
 	lock_guard <mutex> lock1(canUseBlockTreeActions);
 
-	//save the block
-	addBlock(m->SHA256OfParent, SHAOfBlock, message, len, true);
-
 	//check if the block arrived on time
 	if (Get_Time() > m->TimeAtCreation + Time_Block / 3)
+	{
+		//save the block
+		addBlock(m->SHA256OfParent, SHAOfBlock, message, len, false);
+
 		return;
+	}
+
+	//save the block
+	addBlock(m->SHA256OfParent, SHAOfBlock, message, len, true);
 
 	//apply the blocks before it
 	applyBlockFake(m->SHA256OfParent);
