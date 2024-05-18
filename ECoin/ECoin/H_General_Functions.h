@@ -6,6 +6,7 @@ using namespace std;
 
 bool initValues(wstring username);
 bool loadIntoFile();
+void Convert_Ip_To_Char_Array(string ip, char* save);
 unsigned long long Get_Time();
 void fillRandom(unsigned char* randomValue, int numberBytes);
 void turnToChar(char* place, char* value, int size);

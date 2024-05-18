@@ -281,8 +281,7 @@ bool initValues(wstring username)
 	if (!loadFromFile(username))
 		return false;
 
-	//initializes the values for the bootnode list
-	char tempIp[4] = { (char)127, (char)0, (char)0, (char)1 };//{ (char)77, (char)139, (char)1, (char)166 };//
+	//initializes public key and port of the bootnode
 	char tempID[32] = {(char)-13, (char)-109, (char)112, (char)-107,
 		(char)-63, (char)39, (char)20, (char)-59, 
 		(char)-16, (char)-77, (char)120, (char)56, 
@@ -291,8 +290,6 @@ bool initValues(wstring username)
 		(char)108, (char)-56, (char)-127, (char)68, 
 		(char)-7, (char)102, (char)-100, (char)-54, 
 		(char)121, (char)-57, (char)61, (char)5 };
-	Bootnode_Details[0].port = (unsigned short)51647;
-	memcpy(Bootnode_Details[0].ip, tempIp, 4);
 	memcpy(Bootnode_Details[0].nodeID, tempID, 32);
 
 	//creates trees for the communication and for staking pool operator 

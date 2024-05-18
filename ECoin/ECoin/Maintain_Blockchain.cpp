@@ -136,7 +136,6 @@ int checkBindStakingPoolOperator(Contract* check, unsigned long long time, bool 
 	//apply the contract
 	addToTree(&check->contract.newStakingPoolOperator, check->amountOfMoney, 1, 0, NULL);
 	setVariableIndPlace(&check->contract.newStakingPoolOperator, 1, 0, check->contract.untilTime);
-	updateCoinAmount(&check->contract.newStakingPoolOperator, check->amountOfMoney, 1);
 
 	return 2;
 }
@@ -188,7 +187,6 @@ int checkBindRandomStakingPoolOperator(Contract_Random* check, unsigned long lon
 	//add the random staking pool operator to the treap of all staking pool operators now
 	addToTree(&check->contract.newStakingPoolOperator, check->amountOfMoney, 1, 0, NULL);
 	setVariableIndPlace(&check->contract.newStakingPoolOperator, 1, 0, check->contract.untilTime);
-	updateCoinAmount(&check->contract.newStakingPoolOperator, check->amountOfMoney, 1);
 
 	if (!Is_Staking_Pool_Operator)
 		return 2;
@@ -526,7 +524,7 @@ void tryCreateNextBlock()
 	timeNow -= timeNow % Time_Block;
 	getXorAll(timeNow, nextCreator);
 
-	//checks if there is an error with receiving the random number
+	//checks if there is an error with receiving the random numbers
 	char zeroForCheck[32]{ 0 };
 	if (memcmp(zeroForCheck, nextCreator, 32) == 0)
 	{
@@ -544,7 +542,7 @@ void tryCreateNextBlock()
 	//check if this user is the next creator and if it is, create it
 	if (memcmp(&My_Details, &answer, sizeof(NodeDetails)) == 0)
 	{
-		cout << "i am the block creator!!!" << '\n';
+		cout << "i am the block creator!" << '\n';
 
 		//create the new block
 		pair <char*, int> blockMessage = Handle_Block_Create(parentOfNew->sha256OfBlock, ((Block*)parentOfNew->startOfBlock)->BlockNumber + 1);

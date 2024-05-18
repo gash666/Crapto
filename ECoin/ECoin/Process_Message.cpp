@@ -323,12 +323,8 @@ void Handle_Block_Process(char* message, int len)
 	{
 		//save the block
 		addBlock(m->SHA256OfParent, SHAOfBlock, message, len, false);
-
 		return;
 	}
-
-	//save the block
-	addBlock(m->SHA256OfParent, SHAOfBlock, message, len, true);
 
 	//apply the blocks before it
 	applyBlockFake(m->SHA256OfParent);
@@ -358,6 +354,7 @@ void Handle_Block_Process(char* message, int len)
 	if (memcmp(&realCreator, &m->BlockCreator, sizeof(NodeDetails)) != 0)
 	{
 		reversePath(m->SHA256OfParent);
+		addBlock(m->SHA256OfParent, SHAOfBlock, message, len, false);
 		return;
 	}
 
@@ -365,7 +362,11 @@ void Handle_Block_Process(char* message, int len)
 	tempPointer -= m->HowmanyFromEachType[0] * sizeof(Random_Reveal);
 
 	if (getSizeTreapInd(3) != m->HowmanyFromEachType[0] + m->HowmanyFromEachType[1])
+	{
+		reversePath(m->SHA256OfParent);
+		addBlock(m->SHA256OfParent, SHAOfBlock, message, len, false);
 		return;
+	}
 
 	//check if the random values that appear in the block are valid
 	for (int a = 0; a < m->HowmanyFromEachType[0]; a++, tempPointer += sizeof(Random_Reveal))
@@ -376,6 +377,7 @@ void Handle_Block_Process(char* message, int len)
 		if (tempVal == 0 or memcmp(randomValIn, tempPointer + sizeof(NodeDetails), 32) != 0)
 		{
 			reversePath(m->SHA256OfParent);
+			addBlock(m->SHA256OfParent, SHAOfBlock, message, len, false);
 			return;
 		}
 
@@ -383,6 +385,7 @@ void Handle_Block_Process(char* message, int len)
 		if (isAlreadyIn(((NodeDetails*)tempPointer)->nodeID, 1))
 		{
 			reversePath(m->SHA256OfParent);
+			addBlock(m->SHA256OfParent, SHAOfBlock, message, len, false);
 			return;
 		}
 
@@ -397,6 +400,7 @@ void Handle_Block_Process(char* message, int len)
 	if (getAmountOfMoneyInd(&m->BlockCreator, 1) + Number_Coins_Per_Block != m->newAmountCreator)
 	{
 		reversePath(m->SHA256OfParent);
+		addBlock(m->SHA256OfParent, SHAOfBlock, message, len, false);
 		return;
 	}
 
@@ -412,6 +416,7 @@ void Handle_Block_Process(char* message, int len)
 		{
 			ReverseBlockUntil(message, len, { 1, a });
 			reversePath(m->SHA256OfParent);
+			addBlock(m->SHA256OfParent, SHAOfBlock, message, len, false);
 			return;
 		}
 
@@ -420,6 +425,7 @@ void Handle_Block_Process(char* message, int len)
 		{
 			ReverseBlockUntil(message, len, { 1, a });
 			reversePath(m->SHA256OfParent);
+			addBlock(m->SHA256OfParent, SHAOfBlock, message, len, false);
 			return;
 		}
 
@@ -447,6 +453,7 @@ void Handle_Block_Process(char* message, int len)
 			//the block is wrong - reverse the actions taken so far
 			ReverseBlockUntil(message, len, { 2, a } );
 			reversePath(m->SHA256OfParent);
+			addBlock(m->SHA256OfParent, SHAOfBlock, message, len, false);
 			return;
 		}
 
@@ -461,6 +468,7 @@ void Handle_Block_Process(char* message, int len)
 			//the block is wrong - reverse the actions taken so far
 			ReverseBlockUntil(message, len, { -1, -1 });
 			reversePath(m->SHA256OfParent);
+			addBlock(m->SHA256OfParent, SHAOfBlock, message, len, false);
 			return;
 		}
 	}
@@ -472,8 +480,12 @@ void Handle_Block_Process(char* message, int len)
 			//the block is wrong - reverse the actions taken so far
 			ReverseBlockUntil(message, len, { -1, -1 });
 			reversePath(m->SHA256OfParent);
+			addBlock(m->SHA256OfParent, SHAOfBlock, message, len, false);
 			return;
 		}
+
+	//save the block
+	addBlock(m->SHA256OfParent, SHAOfBlock, message, len, true);
 
 	//sends a confirmation message or starts the confirmation process if needed
 	shouldSignBlock(SHAOfBlock);

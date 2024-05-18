@@ -44,11 +44,52 @@ void runAllTheTime()
 int main()
 {
     srand((unsigned int) time(NULL));
-    Is_Bootnode = false;
+
+    //check if the user should run locally or not
+    cout << "Do you want the code to run locally?" << '\n';
+    string ans;
+    cin >> ans;
+    if (ans == "YES")
+    {
+        char tempIp[4] = { (char)127, (char)0, (char)0, (char)1 };
+        memcpy(Bootnode_Details[0].ip, tempIp, 4);
+        Bootnode_Details[0].port = (unsigned short)51647;
+    }
+    else
+    {
+        //check if the ip and port of the bootnode should be the default
+        cout << "Would you like to have the default ip and port for the bootnode?" << '\n';
+        cin >> ans;
+        if (ans == "YES")
+        {
+            //set the ip and port of the bootnode to be the default
+            char tempIp[4] = { (char)77, (char)139, (char)1, (char)166 };
+            memcpy(Bootnode_Details[0].ip, tempIp, 4);
+            Bootnode_Details[0].port = (unsigned short)51647;
+        }
+        else
+        {
+            //get the ip of the bootnode
+            cout << "Enter the ip of the bootnode" << '\n';
+            cin >> ans;
+            Convert_Ip_To_Char_Array(ans, Bootnode_Details[0].ip);
+
+            //get the port of the bootnode
+            cout << "Enter the port of the bootnode" << '\n';
+            cin >> Bootnode_Details[0].port;
+        }
+    }
+
+    //get the username
+    cout << "Enter your username" << '\n';
     wstring username;
     wcin >> username;
+    
+    //update whether the user is the bootnode
+    Is_Bootnode = false;
     if (username == L"bootnode")
         Is_Bootnode = true;
+
     if (!initValues(username))
         cout << "init went wrong" << '\n';
     else if (isFirstAll)

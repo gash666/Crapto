@@ -159,7 +159,21 @@ pair <char*, int> Handle_Block_Create(char* shaOfParent, unsigned long long bloc
 
     //add the users who didn't send their random numbers to the block
     ans->HowmanyFromEachType[1] = (unsigned char)copyDetailsFromTreapInd(3, tempPointer, ans->TimeAtCreation - Time_Block, false);
-    tempPointer += ans->HowmanyFromEachType[1] * sizeof(NodeDetails);
+
+    //apply the punishments for random staking pool operators who didn't reveal their number
+    for (int a = 0; a < ans->HowmanyFromEachType[1]; a++, tempPointer += sizeof(NodeDetails))
+    {
+        //calculate the new amounts of money
+        unsigned long long amountOfMoney = getAmountOfMoneyInd((NodeDetails*)tempPointer, 1);
+        amountOfMoney -= Punishment_Not_Reveal;
+
+        //removes the punished random staking pool operator from their treap if needed
+        if (amountOfMoney < Min_Coins_Random_Staking_Pool_Operator)
+            removeNode((NodeDetails*)tempPointer, 3);
+
+        //set the new amount of money for the random staking pool operator
+        setAmountMoneyInd((NodeDetails*)tempPointer, amountOfMoney, 1);
+    }
 
     //add the payments to the block
     int allIn = getSizeInd(0), a = 0;

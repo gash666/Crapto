@@ -219,51 +219,6 @@ void printDataStakingPoolOperators()
 	printDataTreap();
 }
 
-bool shouldBotRun;
-
-void payRandom()
-{
-	//pays random users each time
-	shouldBotRun = true;
-	while (shouldBotRun)
-	{
-		//get the details of a random user
-		this_thread::sleep_for(chrono::milliseconds(time_To_Sleep_Bot));
-		char randomId[32];
-		fillRandom((unsigned char*)randomId, 32);
-		NodeDetails payTo;
-		getClosest(randomId, 1, &payTo);
-
-		//decide of a random amount of money to pay
-		unsigned long long randomAmountPay = rand() % min(Number_Coins, (unsigned long long)Maximum_Bot_Payment) + 1;
-
-		//pay this user a random small amount of money
-		Pay* message = new Pay{};
-		Handle_Pay_Create(&payTo, randomAmountPay, message);
-
-		//send the transaction to the payment receiver
-		sendMessage((char*)message, sizeof(Pay), payTo.ip, payTo.port);
-
-		//spread the message to other nodes
-		handleMessage((char*)message, sizeof(Pay));
-	}
-}
-
-void commandBot(bool valToSet)
-{
-	//sets the values for the thread of the bot or calls it if needed
-	shouldBotRun = valToSet;
-	if (valToSet)
-	{
-		if (Number_Coins == 0)
-		{
-			cout << "you don't have enough money" << '\n';
-			return;
-		}
-		post(ThreadPool, []() { payRandom(); });
-	}
-}
-
 void estimateAmount()
 {
 	//prints an estimation for the number of online users
@@ -293,10 +248,6 @@ void processCommands()
 			printBlockNumberApproved();
 		else if (command == "PRINT_STAKED")
 			printDataStakingPoolOperators();
-		else if (command == "START_BOT")
-			commandBot(true);
-		else if (command == "STOP_BOT")
-			commandBot(false);
 		else if (command == "USER_COUNT")
 			estimateAmount();
 	}
