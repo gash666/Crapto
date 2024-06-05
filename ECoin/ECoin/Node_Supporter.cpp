@@ -181,7 +181,6 @@ bool Tree::getHasSent(NodeDetails* askAbout)
 	return headOfTree->askSent(askAbout);
 }
 
-
 void Node::addToList()
 {
 	//adds this node to a list of nodes
@@ -744,6 +743,9 @@ int estimateUserAmount()
 		lastNotFull--;
 		powerToEstimate /= 2;
 	}
+
+	if (firstNotZero == lastNotFull)
+		return 1;
 
 	return sum / (firstNotZero - lastNotFull) + 1;
 }

@@ -297,8 +297,6 @@ pair <char*, int> Handle_Block_Create(char* shaOfParent, unsigned long long bloc
     return { (char*) ans, (int)(tempPointer - (char*)ans) + 64 };
 }
 
-//message with id 8 - contract
-
 void Handle_Bind_Random_Staking_Pool_Operator_Create(char* randomVal, unsigned long long timeStart, unsigned long long timeEnd, Bind_Random_Staking_Pool_Operator* ans)
 {
     //creates a contract that binds a user to be a staking pool operator that produces random numbers

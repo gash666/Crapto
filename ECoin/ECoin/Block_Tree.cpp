@@ -183,6 +183,13 @@ pair <char*, int> getBlock(char* shaOfBlock)
 	return { answer->startOfBlock, answer->sizeOfBlock };
 }
 
+void sendApproveMessage(Confirm_Block* ans, BlockTreeNode* maybeApprove)
+{
+	//sends a confirmation message for the block
+	this_thread::sleep_for(chrono::milliseconds(5000));
+	sendMessage((char*)ans, sizeof(Confirm_Block), ((Block*)maybeApprove->startOfBlock)->BlockCreator.ip, ((Block*)maybeApprove->startOfBlock)->BlockCreator.port);
+}
+
 void shouldSignBlock(char* shaOfBlock)
 {
 	//returns whether the asked block should be signed by this user
@@ -232,7 +239,7 @@ void shouldSignBlock(char* shaOfBlock)
 		//sends a message that approves the block
 		Confirm_Block* ans = new Confirm_Block{};
 		Handle_Confirm_Block_Create(maybeApprove->sha256OfBlock, ans);
-		sendMessage((char*)ans, sizeof(Confirm_Block), ((Block*)maybeApprove->startOfBlock)->BlockCreator.ip, ((Block*)maybeApprove->startOfBlock)->BlockCreator.port);
+		post(ThreadPool, [ans, maybeApprove]() { sendApproveMessage(ans, maybeApprove); });
 	}
 }
 
